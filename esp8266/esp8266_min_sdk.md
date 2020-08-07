@@ -16,3 +16,5 @@ https://github.com/pfalcon/esp-open-sdk
 https://gist.github.com/SmallRoomLabs/f625137ca053c97bd6f6bc5e1ea230c8
 
 https://github.com/trebisky/esp8266/tree/master/NoSDK
+
+https://github.com/cnlohr/nosdk8266
