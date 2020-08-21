@@ -12,6 +12,8 @@ http://www.fuzix.org/
 UZI on a z80 emulator could be promising
 https://github.com/chettrick/uzics - Unix for z80
 https://github.com/aldolo69/esp8266_zxspectrum_emulator
-
-https://hackaday.com/2018/02/26/pc-xt-emulator-on-esp8266/
 https://github.com/SmallRoomLabs/cpm8266
+
+Maybe i386 NetBSD on x86 emulator?
+https://hackaday.com/2018/02/26/pc-xt-emulator-on-esp8266/
+http://wiki.netbsd.org/ports/
