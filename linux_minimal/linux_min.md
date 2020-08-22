@@ -7,7 +7,7 @@
 - https://github.com/vsolina/mipyshell - A Unix like shell for ESP32
 - https://www.reddit.com/r/esp32/comments/dtlj7n/booting_linux_on_esp32_realtime_video/ - A video of Linux booting on an ESP32 using a port of uARM (the next link)
 - https://dmitry.gr/?r=05.Projects&proj=07.%20Linux%20on%208bit - An ArmV5 emulator for 8 bit AVR with no MMU, includes porting instrutions 
-- https://nuttx.apache.org/ - A Posix compliant RTOS that runs on many platforms, runs on ATmega boards or even z80
+- https://nuttx.apache.org/ - A Posix compliant RTOS that runs on many platforms, claims to runs on ATmega boards or even z80
   - https://cwiki.apache.org/confluence/display/NUTTX/Porting+Guide - Comes with porting guide
   - https://github.com/rohiniku/NuttX-nuttx-boards/tree/master/micropendous3 - Runs on Atmel AT90USB646, 647, 1286 or 1287 MCU
   - https://github.com/rohiniku/NuttX-nuttx-boards/tree/master/amber - Also runs on Atmel ATmega128
