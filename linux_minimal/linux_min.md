@@ -1,5 +1,10 @@
 # Resources and information about running Linux (or something similar) with the lowest system requirements or cheapest/simplest systems
 
+Hardware:
+https://jaycarlson.net/microcontrollers/
+https://hackaday.com/2018/09/17/a-1-linux-capable-hand-solderable-processor/
+
+Software:
 - http://uzix.sourceforge.net/index.php?lang=us - UNIX for the z80
 - https://en.wikipedia.org/wiki/Microkernel
 - http://netbsd.org/ - Runs on many platforms, could be ported possibly
@@ -31,7 +36,7 @@ UZIX or FUZIX  on a z80 emulator could be promising
   - http://www.fuzix.org/ - Another UNIX for z80
 
 Maybe i386 NetBSD on x86 emulator?
-  - https://hackaday.com/2018/02/26/pc-xt-emulator-on-esp8266/
+  - https://hackaday.com/2018/02/26/pc-xt-emulator-on-esp8266/ -x86 emulator for ESP8266
   - http://wiki.netbsd.org/ports/ - Says it requires megabytes of RAM, so external RAM would have to be used
   
 # Timeline of UNIX
