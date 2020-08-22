@@ -22,7 +22,7 @@
   - http://ww1.microchip.com/downloads/en/AppNotes/doc32092.pdf - AVR32 was natively supported in the Linux kernel in older versions
 - https://www.esp32.com/viewtopic.php?t=6723&start=10
   - https://github.com/jcmvbkbc/linux-xtensa - These two pages seem to suggest Linux can run on ESP32
-- http://www.dnx-rtos.org/
+- http://www.dnx-rtos.org/ - 10KiB of RAM minimum
 
 UZIX or FUZIX  on a z80 emulator could be promising
   - https://github.com/chettrick/uzics - Unix for z80
