@@ -32,7 +32,7 @@ UZIX or FUZIX  on a z80 emulator could be promising
 
 Maybe i386 NetBSD on x86 emulator?
   - https://hackaday.com/2018/02/26/pc-xt-emulator-on-esp8266/
-  - http://wiki.netbsd.org/ports/
+  - http://wiki.netbsd.org/ports/ - Says it requires megabytes of RAM, so external RAM would have to be used
   
 # Timeline of UNIX
 
