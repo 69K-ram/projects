@@ -1,19 +1,1 @@
-#Resources and information about running Linux with the lowest system requirements
 
-http://uzix.sourceforge.net/index.php?lang=us
-https://en.wikipedia.org/wiki/Microkernel
-http://netbsd.org/
-http://retrobsd.org/ - runs on only 128k ram
-https://github.com/vsolina/mipyshell
-https://www.reddit.com/r/esp32/comments/dtlj7n/booting_linux_on_esp32_realtime_video/
-https://dmitry.gr/?r=05.Projects&proj=07.%20Linux%20on%208bit
-http://www.fuzix.org/
-
-UZI on a z80 emulator could be promising
-https://github.com/chettrick/uzics - Unix for z80
-https://github.com/aldolo69/esp8266_zxspectrum_emulator
-https://github.com/SmallRoomLabs/cpm8266
-
-Maybe i386 NetBSD on x86 emulator?
-https://hackaday.com/2018/02/26/pc-xt-emulator-on-esp8266/
-http://wiki.netbsd.org/ports/
