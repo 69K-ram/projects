@@ -1,10 +1,13 @@
 # Resources and information about running Linux (or something similar) with the lowest system requirements or cheapest/simplest systems
 
 Hardware:
+
 https://jaycarlson.net/microcontrollers/
 https://hackaday.com/2018/09/17/a-1-linux-capable-hand-solderable-processor/
+https://sunxi.org/Main_Page - Wiki for Allwinner parts
 
 Software:
+
 - http://uzix.sourceforge.net/index.php?lang=us - UNIX for the z80
 - https://en.wikipedia.org/wiki/Microkernel
 - http://netbsd.org/ - Runs on many platforms, could be ported possibly
