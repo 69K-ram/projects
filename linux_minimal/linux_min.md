@@ -1,4 +1,4 @@
-#Resources and information about running Linux (or something similar) with the lowest system requirements or cheapest/simplest systems
+# Resources and information about running Linux (or something similar) with the lowest system requirements or cheapest/simplest systems
 
 - http://uzix.sourceforge.net/index.php?lang=us - UNIX for the z80
 - https://en.wikipedia.org/wiki/Microkernel
@@ -33,4 +33,4 @@ Maybe i386 NetBSD on x86 emulator?
   - http://wiki.netbsd.org/ports/
   
 #Timeline of UNIX
-![UNIX Timeline](https://en.wikipedia.org/wiki/File:Unix_timeline.en.svg)
+![UNIX Timeline](https://upload.wikimedia.org/wikipedia/commons/c/cd/Unix_timeline.en.svg)
