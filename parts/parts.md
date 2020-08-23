@@ -43,6 +43,4 @@ https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROVER-IE-16MB
 Other
 
 https://www.digikey.ca/en/products/detail/seeed-technology-co-ltd/102110199/9975970        - Sipeed Lichee Nano
-https://www.digikey.ca/en/products/detail/microchip-technology/ATF750C-7PX/2051053         - Complex Programmable Logic Device
-https://www.digikey.ca/en/products/detail/microchip-technology/ATF750LVC-15PU/1914517      - Same as above but lower power
 https://www.digikey.ca/en/products/detail/seeed-technology-co-ltd/114991684/9975978        - K210 Linux Capable Module
