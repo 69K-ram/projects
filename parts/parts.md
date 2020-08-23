@@ -26,12 +26,23 @@ https://www.digikey.ca/en/products/detail/cypress-semiconductor-corp/CY15E004Q-S
 
 MCU
 
-https://www.digikey.ca/en/products/detail/microchip-technology/ATTINY10-TSHR/2051008 - ATtiny 10  SOT
-https://www.digikey.ca/en/products/detail/microchip-technology/ATTINY84A-SSUR/2774109- ATtiny 84A SOIC
+https://www.digikey.ca/en/products/detail/microchip-technology/ATTINY10-TSHR/2051008   - ATtiny 10   SOT
+https://www.digikey.ca/en/products/detail/microchip-technology/ATTINY84A-SSUR/2774109  - ATtiny 84A  SOIC
+https://www.digikey.ca/en/products/detail/microchip-technology/ATTINY1606-SNR/10187748 - ATtiny 1606 SOIC
+https://www.digikey.ca/en/products/detail/microchip-technology/ATTINY3216-SNR/9477801  - ATtiny 3216 SOIC
+https://www.digikey.ca/en/products/detail/microchip-technology/ATTINY402-SSNR/9554946  - ATtiny 402  SOIC
 
-attiny 404
-attiny13a
-pic16
-attiny804
-attiny1604
-attiny84
+ESP32
+
+https://www.digikey.ca/en/products/detail/seeed-technology-co-ltd/110060576/6596880 - ESP32 Breakout Board
+
+https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROOM-32UE-4MB/11613136  - ESP32 Wroom 4MB
+https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROVER-IE-4MB/11613131   - ESP32 Wrover 4MB
+https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROVER-IE-16MB/11613133  - ESP32 Wrover 16MB
+
+Other
+
+https://www.digikey.ca/en/products/detail/seeed-technology-co-ltd/102110199/9975970        - Sipeed Lichee Nano
+https://www.digikey.ca/en/products/detail/microchip-technology/ATF750C-7PX/2051053         - Complex Programmable Logic Device
+https://www.digikey.ca/en/products/detail/microchip-technology/ATF750LVC-15PU/1914517      - Same as above but lower power
+https://www.digikey.ca/en/products/detail/seeed-technology-co-ltd/114991684/9975978        - K210 Linux Capable Module
