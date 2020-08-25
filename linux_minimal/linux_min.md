@@ -20,6 +20,8 @@
         Unless you want to have Linux (Or UNIX or BSD) running on something really cheap/crappy just for the fun of it, this is probably the best option
   
 # The big list (not all of these are useful)
+  - http://www.sebastian-duell.de/en/microbox/index.html - A Unix like shell. Runs on ESP8266
+  - https://github.com/Spiritdude/nodemcu-shell - A better Unix like shell. Runs on ESP8266/32
   - https://larrylisky.com/2012/07/14/how-to-create-a-small-rtos/
   - http://uzix.sourceforge.net/index.php?lang=us - UNIX for the z80
   - https://en.wikipedia.org/wiki/Microkernel
