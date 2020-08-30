@@ -8,6 +8,8 @@
 - http://ww1.microchip.com/downloads/en/DeviceDoc/AVR-Instruction-Set-Manual-DS40002198A.pdf
 - http://www.rjhcoding.com/avr-asm-sreg.php
 - http://femtoos.org/
+- http://se.fi.uncoma.edu.ar/xinu-avr/
+  - https://github.com/zrafa/xinu-avr/
 
 # ESP8266 Specific
  - http://cholla.mmto.org/esp8266/xtensa.html
