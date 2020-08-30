@@ -7,6 +7,7 @@
 - https://ucexperiment.wordpress.com/2016/03/04/arduino-inline-assembly-tutorial-1/
 - http://ww1.microchip.com/downloads/en/DeviceDoc/AVR-Instruction-Set-Manual-DS40002198A.pdf
 - http://www.rjhcoding.com/avr-asm-sreg.php
+- http://femtoos.org/
 
 # ESP8266 Specific
  - http://cholla.mmto.org/esp8266/xtensa.html
