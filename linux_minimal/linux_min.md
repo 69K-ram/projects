@@ -1,5 +1,7 @@
 # Resources and information about running Linux (or something similar) with the lowest system requirements or cheapest/simplest systems
 # Useful
+  - http://se.fi.uncoma.edu.ar/xinu-avr/
+    - A sorta Unix like OS that runs on ATmega328p
   - http://retrobsd.org/
     - UNIX with only 128K ram? This seems like one of the most promising options
     - It runs on PIC32MX, which is MIPS32 M4K architecture. 
