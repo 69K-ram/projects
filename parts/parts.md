@@ -27,10 +27,15 @@ https://www.digikey.ca/en/products/detail/cypress-semiconductor-corp/CY15E004Q-S
 MCU
 
 https://www.digikey.ca/en/products/detail/microchip-technology/ATTINY10-TSHR/2051008   - ATtiny 10   SOT
+https://www.digikey.ca/en/products/detail/microchip-technology/ATTINY13V-10PQ/1914674  - ATtiny 13V  DIP
+https://www.digikey.ca/en/products/detail/microchip-technology/ATTINY13A-PU/1914671    - ATtiny 13A  DIP
 https://www.digikey.ca/en/products/detail/microchip-technology/ATTINY84A-SSUR/2774109  - ATtiny 84A  SOIC
+https://www.digikey.ca/en/products/detail/microchip-technology/ATTINY84A-PU/2774082    - ATtiny 84A  DIP
 https://www.digikey.ca/en/products/detail/microchip-technology/ATTINY1606-SNR/10187748 - ATtiny 1606 SOIC
 https://www.digikey.ca/en/products/detail/microchip-technology/ATTINY3216-SNR/9477801  - ATtiny 3216 SOIC
 https://www.digikey.ca/en/products/detail/microchip-technology/ATTINY402-SSNR/9554946  - ATtiny 402  SOIC
+
+https://www.digikey.ca/en/products/detail/microchip-technology/AT89LP214-20PU/1914367  - 8051 2K DIP
 
 ESP32
 
