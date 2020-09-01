@@ -47,8 +47,16 @@ https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROOM-32UE-4MB
 
 Voltage Regulator
 
-https://www.digikey.ca/en/products/detail/stmicroelectronics/LD1117AV33/586006      - 3.3V 1A
-https://www.digikey.ca/en/products/detail/infineon-technologies/IRU1050-33CT/365651 - 3.3V 5A
+https://www.digikey.ca/en/products/detail/microchip-technology/MCP1700-1802E-TO/652675 - 1.8V 200MA
+https://www.digikey.ca/en/products/detail/stmicroelectronics/LD1117V18/669255          - 1.8V 800MA
+https://www.digikey.ca/en/products/detail/diodes-incorporated/AP1084T18L-U/1301115     - 1.8V 5A
+
+https://www.digikey.ca/en/products/detail/stmicroelectronics/LD1117AV33/586006         - 3.3V 1A
+https://www.digikey.ca/en/products/detail/infineon-technologies/IRU1050-33CT/365651    - 3.3V 5A
+
+https://www.digikey.ca/en/products/detail/diodes-incorporated/AS78L05ZTR-E1/4505037    - 5V 100MA
+https://www.digikey.ca/en/products/detail/on-semiconductor/SCD7805BTG/5845498          - 5V 1A
+https://www.digikey.ca/en/products/detail/stmicroelectronics/L78S05CV/585989           - 5V 2A
 
 Other
 
