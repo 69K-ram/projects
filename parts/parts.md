@@ -35,11 +35,15 @@ https://www.digikey.ca/en/products/detail/microchip-technology/ATTINY402-SSNR/95
 ESP32
 
 https://www.digikey.ca/en/products/detail/seeed-technology-co-ltd/110060576/6596880 - ESP32 Breakout Board
+https://www.digikey.ca/en/products/detail/m5stack-technology-co-ltd/C008/12088545   - ESP32 Mini Dev Board
 
 https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROVER-E-4MB/11613129    - ESP32 WroverE 4MB
-https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROOM-32UE-4MB/11613136  - ESP32 WroomUE 4MB
+https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROVER-E-8MB/11613126    - ESP32 WroverE 8MB
 https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROVER-IE-4MB/11613131   - ESP32 WroverIE 4MB
 https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROVER-IE-16MB/11613133  - ESP32 WroverIE 16MB
+
+https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROOM-32E-8MB/11613130   - ESP32 WroomE 8MB
+https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROOM-32UE-4MB/11613136  - ESP32 WroomUE 4MB
 
 Voltage Regulator
 
