@@ -62,3 +62,4 @@ Other
 
 https://www.digikey.ca/en/products/detail/seeed-technology-co-ltd/102110199/9975970        - Sipeed Lichee Nano
 https://www.digikey.ca/en/products/detail/seeed-technology-co-ltd/114991684/9975978        - K210 Linux Capable Module
+https://www.digikey.ca/en/products/detail/U035/2221-U035-ND/11200930?itemSeq=337039258     - Keyboard
