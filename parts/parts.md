@@ -36,9 +36,15 @@ ESP32
 
 https://www.digikey.ca/en/products/detail/seeed-technology-co-ltd/110060576/6596880 - ESP32 Breakout Board
 
-https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROOM-32UE-4MB/11613136  - ESP32 Wroom 4MB
-https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROVER-IE-4MB/11613131   - ESP32 Wrover 4MB
-https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROVER-IE-16MB/11613133  - ESP32 Wrover 16MB
+https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROVER-E-4MB/11613129    - ESP32 WroverE 4MB
+https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROOM-32UE-4MB/11613136  - ESP32 WroomUE 4MB
+https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROVER-IE-4MB/11613131   - ESP32 WroverIE 4MB
+https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROVER-IE-16MB/11613133  - ESP32 WroverIE 16MB
+
+Voltage Regulator
+
+https://www.digikey.ca/en/products/detail/stmicroelectronics/LD1117AV33/586006      - 3.3V 1A
+https://www.digikey.ca/en/products/detail/infineon-technologies/IRU1050-33CT/365651 - 3.3V 5A
 
 Other
 
