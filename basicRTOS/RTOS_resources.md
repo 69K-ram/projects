@@ -4,6 +4,10 @@
  - https://larrylisky.com/2012/07/14/how-to-create-a-small-rtos/
  
 # Arduino Specific 
+- https://www.avrfreaks.net/forum/switch-context-task-and-go-back-atmega328p
+- https://www.freertos.org/implementation/a00015.html
+- https://xivilization.net/~marek/binaries/multitasking.pdf
+- https://www.avrfreaks.net/forum/simple-context-switch-c
 - https://ucexperiment.wordpress.com/2016/03/04/arduino-inline-assembly-tutorial-1/
 - http://ww1.microchip.com/downloads/en/DeviceDoc/AVR-Instruction-Set-Manual-DS40002198A.pdf
 - http://www.rjhcoding.com/avr-asm-sreg.php
