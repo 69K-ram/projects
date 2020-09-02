@@ -69,6 +69,12 @@ https://www.digikey.ca/en/products/detail/diodes-incorporated/AS78L05ZTR-E1/4505
 https://www.digikey.ca/en/products/detail/on-semiconductor/SCD7805BTG/5845498          - 5V 1A
 https://www.digikey.ca/en/products/detail/stmicroelectronics/L78S05CV/585989           - 5V 2A
 
+DIP Socket
+
+https://www.digikey.ca/en/products/detail/DILB8P-223TLF/609-4717-ND/4292069?itemSeq=337214908   - 8 DIP
+https://www.digikey.ca/en/products/detail/A+14-LC-TT/AE9989-ND/821743?itemSeq=337214912         - 14 DIP
+https://www.digikey.ca/en/products/detail/ICS-328-T/2057-ICS-328-T-ND/9832859?itemSeq=337214914 - 28 DIP
+
 Other
 
 https://www.digikey.ca/en/products/detail/seeed-technology-co-ltd/102110199/9975970        - Sipeed Lichee Nano
