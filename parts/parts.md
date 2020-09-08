@@ -42,6 +42,7 @@ ESP32
 https://www.digikey.ca/en/products/detail/seeed-technology-co-ltd/110060576/6596880 - ESP32 Breakout Board
 https://www.digikey.ca/en/products/detail/m5stack-technology-co-ltd/C008/12088545   - ESP32 Mini Dev Board
 
+https://www.digikey.ca/en/products/filter/rf-transceiver-modules-and-modems/872?s=N4IgjCBcoLQCxVAYygMwIYBsDOBTANCAPZQDaIAzAAxwBMAnCIQGwCsF9jAuoQA4AuUECAC%2BIlohABLACZCYYKhD6DIwwvwCevXEPTYUYoA - ESP DigiKey search
 https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROVER-E-4MB/11613129    - ESP32 WroverE 4MB
 https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROVER-E-8MB/11613126    - ESP32 WroverE 8MB
 https://www.digikey.ca/en/products/detail/espressif-systems/ESP32-WROVER-IE-4MB/11613131   - ESP32 WroverIE 4MB
