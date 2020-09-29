@@ -5,19 +5,21 @@ https://github.com/MHeironimus/ArduinoJoystickLibrary
 
 #include <Joystick.h> 
 
-Joystick_ Joystick; // the default declaration for the gamepad object
+Joystick_ Joystick; // the default declaration for the gamepad object. this makes the computer think it has 32 buttons and two joysticks, but if you only use one button it doesn't matter
 
-int wheel = A0; //pins for the various inputs
-int accel = 7;
-int drift = 6;
+// pins for the various inputs
+int wheel = A0; // analog pin for the steering potentiometer
+int accel = 7;  // digital pin for the throttle button. unfortunately its not an analog throttle, so it's either full throttle or no throttle
+int drift = 6;  // same thing as above ^ but this one is for a handbrake
 
 void setup() {
+  // set up the inputs. for buttons you can use INPUT_PULLUP and connect one lead of the button to ground
   pinMode(wheel, INPUT);
   pinMode(accel, INPUT_PULLUP);
   pinMode(drift, INPUT_PULLUP);
-  Joystick.setXAxisRange(0,1023);
-  Joystick.setYAxisRange(0, 1);
-  Joystick.begin();
+  Joystick.setXAxisRange(0,1023); // sets the range of the joystick x axis. i set it to the range of analogRead
+  Joystick.setYAxisRange(0, 1);   // sets range of joystick y axis. i set to 0-1 becuase that's what my game accelerator reads, and my gas pedal is only on or off
+  Joystick.begin(); // begins joystick library. 
 }
 
 void loop() {
