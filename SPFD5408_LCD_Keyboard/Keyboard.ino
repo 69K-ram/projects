@@ -126,10 +126,8 @@ void GetKeyPress(char * textBuffer)
 
   waitOneTouch();
 
-  Serial.println("get keypress");
   //ShiftKey
   if (TouchButton(15, 160, 35, 25))
-    Serial.println("shift");
   {
     shift = !shift;
     delay(200);
@@ -138,7 +136,6 @@ void GetKeyPress(char * textBuffer)
   //Special Characters
   if (TouchButton(15, 190, 35, 25))
   {
-    Serial.println("space");
     special = !special;
     delay(200);
   }
@@ -189,7 +186,6 @@ void GetKeyPress(char * textBuffer)
 
   for (int y = 0; y < 3; y++)
   {
-    Serial.println("other keys");
     int ShiftRight;
     if (special)
     {
@@ -300,13 +296,6 @@ byte TouchButton(int x, int y, int w, int h)
 
   Y = map(p.x, TS_MINY, TS_MAXY, tft.height(), 0);
   X = map(p.y, TS_MINX, TS_MAXX, 0, tft.width());
-  Serial.print(X);
-  Serial.print(" ");
-  Serial.print(Y);
-  Serial.print(" ");
-  Serial.print(x);
-  Serial.print(" ");
-  Serial.println(y);
   return (IsWithin(X, x, x + w) & IsWithin(Y, y, y + h));
 }
 
