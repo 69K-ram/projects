@@ -1,0 +1,104 @@
+<!--
+!!html_title Camera position demo - Computer Graphics from scratch
+-->
+<canvas id="canvas" width=600 height=600 style="border: 1px grey solid">
+
+<script>
+
+var canvas = document.getElementById("canvas");
+var canvas_context = canvas.getContext("2d");
+var canvas_buffer = canvas_context.getImageData(0, 0, canvas.width, canvas.height);
+var canvas_pitch = canvas_buffer.width * 4;
+var PutPixel = function(x, y, color) {
+  x = canvas.width/2 + x;
+  y = canvas.height/2 - y - 1;
+  if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) {
+    return;
+  }
+  var offset = 4*x + canvas_pitch*y;
+  canvas_buffer.data[offset++] = color[0];
+  canvas_buffer.data[offset++] = color[1];
+  canvas_buffer.data[offset++] = color[2];
+  canvas_buffer.data[offset++] = 255; // Alpha = 255 (full opacity)
+}
+var UpdateCanvas = function() {
+  canvas_context.putImageData(canvas_buffer, 0, 0);
+}
+
+// Dot product of two 3D vectors.
+var DotProduct = function(v1, v2) {
+  return v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];  
+}
+
+// Clamps a color to the canonical color range.
+var Clamp = function(vec) {
+  return [Math.min(255, Math.max(0, vec[0])),
+	  Math.min(255, Math.max(0, vec[1])),
+	  Math.min(255, Math.max(0, vec[2]))]; 
+}
+
+var MultiplyMV = function(mat, vec) {
+  var result = [0, 0, 0];
+
+  for (var i = 0; i < 3; i++) {
+    for (var j = 0; j < 3; j++) {
+      result[i] += vec[j]*mat[i][j];
+    }
+  }
+
+  return result;
+}
+
+// Converts 2D canvas coordinates to 3D viewport coordinates.
+var CanvasToViewport = function(p2d) {
+  return [p2d[0] * viewport_size / canvas.width,
+	  p2d[1] * viewport_size / canvas.height,
+	  projection_plane_z]; 
+}
+
+var distance = function(point, spheres) {
+    var dstToScene = far;
+    for (var i = 0; i < numCircles; i++) {
+        var dstToCircle = Math.sqrt(((spheres[i][0]-p[0])*(spheres[i][0]-p[0])) + ((spheres[i][1]-p[1])*(spheres[i][1]-p[1])) + ((spheres[i][2]-p[2])*(spheres[i][2]-p[2])));
+        dstToScene = Math.min(dstToBox, dstToScene);
+    }
+} 
+
+var near = 0.001;
+var far = 100000;
+
+var p = [0,0,0];
+
+var circles[4][10] = [
+    [0,0,-10,2],
+    [0,0,0,0],
+    [0,0,0,0],
+    [0,0,0,0],
+    [0,0,0,0],
+    [0,0,0,0],
+    [0,0,0,0],
+    [0,0,0,0],
+    [0,0,0,0],
+    [0,0,0,0]
+]
+
+var distanceToScene = far;
+var direction = [0,0,0];
+
+for (var x = -canvas.width/2; x < canvas.width/2; x++) {
+  for (var y = -canvas.height/2; y < canvas.height/2; y++) {
+    direction = CanvasToViewport([x, y]);
+    direction = direction[0]*direction[0] + direction[1]*direction[1] + direction[2]*direction[2]; 
+    distanceToScene = far;
+    while (distanceToScene <= far && distanceToScene >= near) {
+        distanceToScene = distance(p, circles);
+	p[0] 
+    }
+    PutPixel(x, y, Clamp(color));
+  }
+}
+
+UpdateCanvas();
+
+
+</script>
