@@ -1,104 +1,110 @@
-<!--
-!!html_title Camera position demo - Computer Graphics from scratch
--->
-<canvas id="canvas" width=600 height=600 style="border: 1px grey solid">
+<canvas id="canvas" width=400 height=400 style="border: 1px grey solid">
 
-<script>
+  <script>
 
-var canvas = document.getElementById("canvas");
-var canvas_context = canvas.getContext("2d");
-var canvas_buffer = canvas_context.getImageData(0, 0, canvas.width, canvas.height);
-var canvas_pitch = canvas_buffer.width * 4;
-var PutPixel = function(x, y, color) {
-  x = canvas.width/2 + x;
-  y = canvas.height/2 - y - 1;
-  if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) {
-    return;
-  }
-  var offset = 4*x + canvas_pitch*y;
-  canvas_buffer.data[offset++] = color[0];
-  canvas_buffer.data[offset++] = color[1];
-  canvas_buffer.data[offset++] = color[2];
+    var canvas = document.getElementById("canvas");
+    var canvas_context = canvas.getContext("2d");
+    var canvas_buffer = canvas_context.getImageData(0, 0, canvas.width, canvas.height);
+    var canvas_pitch = canvas_buffer.width * 4;
+    var PutPixel = function(x, y, color) {
+      x = canvas.width/2 + x;
+      y = canvas.height/2 - y - 1;
+      if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) {
+        return;
+      }
+      var offset = 4*x + canvas_pitch*y;
+      canvas_buffer.data[offset++] = color[0];
+      canvas_buffer.data[offset++] = color[1];
+      canvas_buffer.data[offset++] = color[2];
   canvas_buffer.data[offset++] = 255; // Alpha = 255 (full opacity)
 }
 var UpdateCanvas = function() {
   canvas_context.putImageData(canvas_buffer, 0, 0);
 }
 
-// Dot product of two 3D vectors.
-var DotProduct = function(v1, v2) {
-  return v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];  
-}
-
-// Clamps a color to the canonical color range.
-var Clamp = function(vec) {
-  return [Math.min(255, Math.max(0, vec[0])),
-	  Math.min(255, Math.max(0, vec[1])),
-	  Math.min(255, Math.max(0, vec[2]))]; 
-}
-
-var MultiplyMV = function(mat, vec) {
-  var result = [0, 0, 0];
-
-  for (var i = 0; i < 3; i++) {
-    for (var j = 0; j < 3; j++) {
-      result[i] += vec[j]*mat[i][j];
-    }
-  }
-
-  return result;
-}
-
 // Converts 2D canvas coordinates to 3D viewport coordinates.
 var CanvasToViewport = function(p2d) {
-  return [p2d[0] * viewport_size / canvas.width,
-	  p2d[1] * viewport_size / canvas.height,
-	  projection_plane_z]; 
+  return [p2d[0] / canvas.width,
+  p2d[1] / canvas.height,
+  projection_plane_z];
 }
 
-var distance = function(point, spheres) {
-    var dstToScene = far;
-    for (var i = 0; i < numCircles; i++) {
-        var dstToCircle = Math.sqrt(((spheres[i][0]-p[0])*(spheres[i][0]-p[0])) + ((spheres[i][1]-p[1])*(spheres[i][1]-p[1])) + ((spheres[i][2]-p[2])*(spheres[i][2]-p[2])));
-        dstToScene = Math.min(dstToBox, dstToScene);
-    }
+var distance = function(point, spheres, numberOfSpheres) {
+  var dstToScene = far;
+  for (var i = 0; i < numberOfSpheres; i++) {
+   var a = (spheres[i][0]-point[0]) **2;
+   var b = (spheres[i][1]-point[1]) **2;
+   var c = (spheres[i][2]-point[2]) **2;
+   dstToScene = Math.min(Math.sqrt(Math.abs(a+b+c)) - spheres[i][3], dstToScene);
+ }
+ return dstToScene;
 } 
 
-var near = 0.001;
-var far = 100000;
+// canvas settings
+var near = 0.05; // when ray is close enough to register a hit
+var far = 1000;
 
-var p = [0,0,0];
+// camera settings
+var viewport_size = 1;
+var projection_plane_z = -1;
 
-var circles[4][10] = [
-    [0,0,-10,2],
-    [0,0,0,0],
-    [0,0,0,0],
-    [0,0,0,0],
-    [0,0,0,0],
-    [0,0,0,0],
-    [0,0,0,0],
-    [0,0,0,0],
-    [0,0,0,0],
-    [0,0,0,0]
-]
-
-var distanceToScene = far;
 var direction = [0,0,0];
+var p = [0,0,0]; // the ray location
+var distanceToScene = far;
+var distanceToLight = far;
+
+var circles = [
+  [5,0,-10, 2],
+  [-5,0,-10, 2],
+  [0,0,-10, 2]
+];
+
+var lights = [
+  [5,15,-10,5]
+];
 
 for (var x = -canvas.width/2; x < canvas.width/2; x++) {
   for (var y = -canvas.height/2; y < canvas.height/2; y++) {
     direction = CanvasToViewport([x, y]);
-    direction = direction[0]*direction[0] + direction[1]*direction[1] + direction[2]*direction[2]; 
-    distanceToScene = far;
-    while (distanceToScene <= far && distanceToScene >= near) {
-        distanceToScene = distance(p, circles);
-	p[0] 
+    //console.log(direction);
+    direction[0] = direction[0]/Math.sqrt(direction[0]**2 + direction[1]**2 + direction[2]**2);
+    direction[1] = direction[1]/Math.sqrt(direction[0]**2 + direction[1]**2 + direction[2]**2);
+    direction[2] = direction[2]/Math.sqrt(direction[0]**2 + direction[1]**2 + direction[2]**2);
+    distanceToScene = far-1;
+    p = [0,0,0];
+    while (distanceToScene < far && distanceToScene > near) {
+      distanceToScene = distance(p, circles, circles.length);
+      p[0] += distanceToScene * direction[0];
+      p[1] += distanceToScene * direction[1];
+      p[2] += distanceToScene * direction[2];
     }
-    PutPixel(x, y, Clamp(color));
-  }
-}
-
+    if (distanceToScene < near) {
+        PutPixel(x, y, [200,200,200]);
+        direction[0] = lights[0][0] - p[0];
+        direction[1] = lights[0][1] - p[1];
+        direction[2] = lights[0][2] - p[2];
+        direction[0] = direction[0]/Math.sqrt(direction[0]**2 + direction[1]**2 + direction[2]**2);
+        direction[1] = direction[1]/Math.sqrt(direction[0]**2 + direction[1]**2 + direction[2]**2);
+        direction[2] = direction[2]/Math.sqrt(direction[0]**2 + direction[1]**2 + direction[2]**2);
+        distanceToLight = far-1;
+        distanceToScene = far-1;
+        while (distanceToLight < far && distanceToLight > near) {
+          distanceToLight = distance(p, lights, lights.length);
+          distanceToScene = distance(p, circles, circles.length);
+          p[0] += distanceToLight * direction[0];
+          p[1] += distanceToLight * direction[1];
+          p[2] += distanceToLight * direction[2];
+          if (distanceToLight - distanceToScene < near){ 
+            break; 
+          }
+        }
+        if (distanceToLight < near) {
+         //console.log(distanceToLight);
+         PutPixel(x, y, [0,0,0]);
+       } 
+     }
+   }
+ }
 UpdateCanvas();
-
 
 </script>
