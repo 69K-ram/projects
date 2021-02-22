@@ -2,6 +2,7 @@
 
   <script>
 
+    // I didn't write these two canvas functions
     var canvas = document.getElementById("canvas");
     var canvas_context = canvas.getContext("2d");
     var canvas_buffer = canvas_context.getImageData(0, 0, canvas.width, canvas.height);
@@ -22,6 +23,7 @@ var UpdateCanvas = function() {
   canvas_context.putImageData(canvas_buffer, 0, 0);
 }
 
+
 // Converts 2D canvas coordinates to 3D viewport coordinates.
 var CanvasToViewport = function(p2d) {
   return [p2d[0] / canvas.width,
@@ -29,82 +31,114 @@ var CanvasToViewport = function(p2d) {
   projection_plane_z];
 }
 
+// point is xyz of the current ray position. spheres is the array of xyz radius numbers for the spheres. numberOfSpheres is so it doesn't go out of bounds accessing the arrays
 var distance = function(point, spheres, numberOfSpheres) {
-  var dstToScene = far;
+  var dstToScene = far; // distance to closest sphere = far value (1000)
   for (var i = 0; i < numberOfSpheres; i++) {
-   var a = (spheres[i][0]-point[0]) **2;
+   var a = (spheres[i][0]-point[0]) **2; // (sphere coordinates - point coordinates)^2
    var b = (spheres[i][1]-point[1]) **2;
    var c = (spheres[i][2]-point[2]) **2;
-   dstToScene = Math.min(Math.sqrt(Math.abs(a+b+c)) - spheres[i][3], dstToScene);
+   // adds up abc and square roots it, then subtracts the radius of the sphere. 
+   // math.min is so the distance to nearest cube is only changed if the distance is smaller than the current stored distance
+   dstToScene = Math.min(Math.sqrt(a+b+c) - spheres[i][3], dstToScene); 
  }
  return dstToScene;
 } 
 
-// canvas settings
 var near = 0.05; // when ray is close enough to register a hit
-var far = 1000;
+var far = 1000;  // how far ray can go
 
 // camera settings
-var viewport_size = 1;
-var projection_plane_z = -1;
+var viewport_size = 1; // idk. for the canvas thing
+var projection_plane_z = -1; // how far the 'screen' is from the camera
 
-var direction = [0,0,0];
+var direction = [0,0,0]; // direction of ray
 var p = [0,0,0]; // the ray location
+var distanceTravelled = 0;
 var distanceToScene = far;
 var distanceToLight = far;
 
+// x,y,z, radius
 var circles = [
   [5,0,-10, 2],
   [-5,0,-10, 2],
   [0,0,-10, 2]
 ];
 
+// x,y,z, radius
 var lights = [
-  [5,15,-10,5]
+  [0,10,0,5]
 ];
 
+//goes through every pixel on the canvas, left to right
 for (var x = -canvas.width/2; x < canvas.width/2; x++) {
   for (var y = -canvas.height/2; y < canvas.height/2; y++) {
-    direction = CanvasToViewport([x, y]);
-    //console.log(direction);
+
+    direction = CanvasToViewport([x, y]); // calculates the vector from the camera (0,0,0) to the point on the 'screen'
+    // normalizes the vector. **2 is ^2
     direction[0] = direction[0]/Math.sqrt(direction[0]**2 + direction[1]**2 + direction[2]**2);
     direction[1] = direction[1]/Math.sqrt(direction[0]**2 + direction[1]**2 + direction[2]**2);
     direction[2] = direction[2]/Math.sqrt(direction[0]**2 + direction[1]**2 + direction[2]**2);
+
     distanceToScene = far-1;
-    p = [0,0,0];
-    while (distanceToScene < far && distanceToScene > near) {
+    distanceTravelled = 0;
+    p = [0,0,0]; // reset point to 0
+    // while the point hasn't hit anything and hasn't gone too far
+    while (distanceTravelled < far && distanceToScene > near) {
+      // distance to nearest sphere
       distanceToScene = distance(p, circles, circles.length);
+      distanceTravelled += distanceToScene;
+      // move the point along it's path the distance of the nearest sphere
       p[0] += distanceToScene * direction[0];
       p[1] += distanceToScene * direction[1];
       p[2] += distanceToScene * direction[2];
     }
-    if (distanceToScene < near) {
-        PutPixel(x, y, [200,200,200]);
-        direction[0] = lights[0][0] - p[0];
+    if (distanceToScene < near) { // if it hits
+        PutPixel(x, y, [200,200,200]); // set the pixel to a gray
+        // direction = vector from the point to the light
+        direction[0] = lights[0][0] - p[0]; 
         direction[1] = lights[0][1] - p[1];
         direction[2] = lights[0][2] - p[2];
+
+        // normalize it again
         direction[0] = direction[0]/Math.sqrt(direction[0]**2 + direction[1]**2 + direction[2]**2);
         direction[1] = direction[1]/Math.sqrt(direction[0]**2 + direction[1]**2 + direction[2]**2);
         direction[2] = direction[2]/Math.sqrt(direction[0]**2 + direction[1]**2 + direction[2]**2);
+
+        // this is where i'm stuck. after a ray hits a pixel, it should then go to the nearest light. if it hits the light without hitting a sphere, then it's in the light.
+        // it does something, but not what it's supposed to.
         distanceToLight = far-1;
         distanceToScene = far-1;
-        while (distanceToLight < far && distanceToLight > near) {
-          distanceToLight = distance(p, lights, lights.length);
-          distanceToScene = distance(p, circles, circles.length);
-          p[0] += distanceToLight * direction[0];
-          p[1] += distanceToLight * direction[1];
-          p[2] += distanceToLight * direction[2];
-          if (distanceToLight - distanceToScene < near){ 
-            break; 
-          }
+        distanceTravelled = 0;
+
+        distanceToLight = distance(p, lights, lights.length);
+        distanceToScene = distance(p, circles, circles.length);
+
+        distanceToScene = Math.min(distanceToLight, distanceToScene);
+        distanceTravelled += distanceToScene;
+        p[0] += distanceToScene * direction[0];
+        p[1] += distanceToScene * direction[1];
+        p[2] += distanceToScene * direction[2];
+
+        while (distanceTravelled < far && distanceToLight > near) {
+            distanceToLight = distance(p, lights, lights.length);
+            distanceToScene = distance(p, circles, circles.length);
+
+            distanceToScene = Math.min(distanceToLight, distanceToScene);
+            distanceTravelled += distanceToScene;
+            p[0] += distanceToScene * direction[0];
+            p[1] += distanceToScene * direction[1];
+            p[2] += distanceToScene * direction[2];
+            if (distanceToScene < near){ 
+              break; 
+            }
         }
-        if (distanceToLight < near) {
-         //console.log(distanceToLight);
+        if (distanceToLight < near) { // if it hits, draw a black pixel
          PutPixel(x, y, [0,0,0]);
        } 
      }
    }
  }
-UpdateCanvas();
+UpdateCanvas(); // draw everything to canvas
 
 </script>
