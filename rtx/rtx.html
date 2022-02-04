@@ -1,0 +1,132 @@
+<canvas id="canvas" width=800 height=800 style="border: 1px grey solid">
+<script>
+var canvas = document.getElementById("canvas");
+var canvas_context = canvas.getContext("2d");
+var canvas_buffer = canvas_context.getImageData(0, 0, canvas.width, canvas.height);
+var canvas_pitch = canvas_buffer.width * 4;
+///////////////////////////////////////////////////////////////////////////////
+//test scene objects
+// x,y,z, radius
+var circles = [
+  [0, 0,-10, 2]
+];
+
+// x,y,z, radius
+var lights = [
+  [0,15,0,5]
+];
+///////////////////////////////////////////////////////////////////////////////
+var small   = 0.0001  // very small
+var near    = 0.01;   // close enough for a hit
+var far     = 100;    // how far ray can go
+
+var bgColour = [7, 155, 219]; 
+///////////////////////////////////////////////////////////////////////////////
+function sceneDistance(_position) { // just gets distance to scene from point
+	var _distanceToScene   = far-1;
+
+	for (var i=0; i <= circles.length/3; i++) {
+		_distanceToScene = Math.min( sdSphere(_position, circles[i], circles[i][3]), _distanceToScene);
+	} 
+	return _distanceToScene;
+}
+///////////////////////////////////////////////////////////////////////////////
+function pixel(_x, _y) { // called for each pixel
+	var direction = normalize(CanvasToViewport([_x, _y]));
+	var location  = [0,0,0];
+	var distanceTravelled = 0;
+	var distanceToScene   = far-1;
+
+	while (distanceTravelled < far && distanceToScene > near) {
+		var distanceToScene = sceneDistance(location);
+		distanceTravelled += distanceToScene;
+		location[0] += distanceToScene * direction[0];
+    location[1] += distanceToScene * direction[1];
+    location[2] += distanceToScene * direction[2];
+	}
+
+	if (distanceToScene <= near) {
+		return([255,255,255]);
+	}
+	return(bgColour)
+}
+///////////////////////////////////////////////////////////////////////////////
+// vector math functions
+function dotProduct(_vector1, _vector2){
+	 return (_vector1[0] * _vector2[0]) + (_vector1[1] * _vector2[1]) + (_vector1[2] * _vector2[2]);
+}
+
+function crossProduct(vector1, vector2){
+	var result = [0,0,0];
+	result[0] = (vector1[1] * vector2[2]) - (vector1[2] * vector2[1]) // x
+	result[1] = (vector1[2] * vector2[0]) - (vector1[0] * vector2[2]) // y
+	result[2] = (vector1[0] * vector2[1]) - (vector1[1] * vector2[0]) // y
+}
+
+function length(vector) {
+	return Math.sqrt(vector[0]**2 + vector[1]**2 + vector[2]**2);
+}
+// also used a ton
+function normalize(vector) {
+    return ([
+    		vector[0]/Math.sqrt(length(vector)),
+    		vector[1]/Math.sqrt(length(vector)),
+    		vector[2]/Math.sqrt(length(vector))
+    ]);
+}
+function subtractVector(vector1, vector2) {
+    return ([
+    		vector1[0]-vector2[0],
+    		vector1[1]-vector2[1],
+    		vector1[2]-vector2[2]
+    ]);
+}
+function addVector(vector1, vector2) {
+    return ([
+    		vector1[0]-vector2[0],
+    		vector1[1]-vector2[1],
+    		vector1[2]-vector2[2]
+    ]);
+}
+function normal(_p) {
+	sdSphere(_p[0] + small)
+}
+function sdSphere(p, sphereCentre, sphereRadius) { // distance to a sphere
+	return length(subtractVector(sphereCentre, p)) - sphereRadius;
+}
+///////////////////////////////////////////////////////////////////////////////
+// canvas functions
+function renderCanvas(_canvasWidth, _canvasHeight) {
+	for (var _canvasX = -_canvasWidth/2; _canvasX <= _canvasWidth/2; _canvasX++) {
+  		for (var _canvasY = -_canvasHeight/2; _canvasY <= _canvasHeight/2; _canvasY++) {
+  			PutPixel(_canvasX, _canvasY, pixel(_canvasX, _canvasY));
+  		}
+  	}
+  	UpdateCanvas();
+}
+var PutPixel = function(x, y, color) {
+	x = canvas.width/2 + x;
+	y = canvas.height/2 - y - 1;
+	if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) {
+    	return;
+	}
+	var offset = 4*x + canvas_pitch*y;
+	canvas_buffer.data[offset++] = color[0];
+	canvas_buffer.data[offset++] = color[1];
+	canvas_buffer.data[offset++] = color[2];
+	canvas_buffer.data[offset++] = 255; // Alpha = 255 (full opacity)
+}
+
+var UpdateCanvas = function() {
+  canvas_context.putImageData(canvas_buffer, 0, 0);
+}
+
+// Converts 2D canvas coordinates to 3D viewport coordinates.
+var CanvasToViewport = function(p2d) {
+  return [p2d[0] / canvas.width,
+  p2d[1] / canvas.height,
+  -1];
+}
+///////////////////////////////////////////////////////////////////////////////
+renderCanvas(canvas.width, canvas.height);
+</script>
