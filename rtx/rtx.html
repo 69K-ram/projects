@@ -1,4 +1,4 @@
-<canvas id="canvas" width=1000 height=1000 style="border: 1px grey solid"> 						<!--creates canvas--> 
+<canvas id="canvas" width=300 height=300 style="border: 1px grey solid"> 						<!--creates canvas--> 
 <script>																																 						// start of js
 var canvas = document.getElementById("canvas");
 var canvas_context = canvas.getContext("2d");														 						// js link to html canvas
@@ -39,35 +39,33 @@ var balls = [
 // x,y,z, brightness (0-1)
 var light = [
 	[-5, 20, -10, 2, 0],
-	[5, 20, -9, 2, 0]
+	[0, 20, 0, 2, 0]
 ];
 ///////////////////////////////////////////////////////////////////////////////
 function pixel(_x, _y) { // called for each pixel
 	var _pathdirection = normalize(CanvasToViewport([_x, _y]));
 	var _position  = [0,0,0];
-	var traceData = trace(_position, _pathdirection, scene);
+	var traceData = trace(_position, _pathdirection, scene, near);
 	if (traceData[1] <= near){
 		return colourAndLight(traceData[0], scene, traceData[2], light);
 	}
 	return bgColour;
 }
 
-function trace(_startLocation, _direction, _sceneSelected){
-	var direction = _direction;
+function trace(_startLocation, _direction, _sceneSelected, _hitDist){
 	var location  = _startLocation;
 	var distanceTravelled = 0;
 	var distanceToScene   = far-1;
-	var scene_objects = _sceneSelected;
 
-	while (distanceTravelled < far && distanceToScene > near) {
-		var distanceData = sceneDistance(location, scene_objects);
+	while (distanceTravelled < far && distanceToScene > _hitDist) {
+		var distanceData = sceneDistance(location, _sceneSelected);
 		distanceToScene = distanceData[0];
 		var hitObject = distanceData[1];
 
 		distanceTravelled += distanceToScene;
-		location[0] += distanceToScene * direction[0];
-    location[1] += distanceToScene * direction[1];
-    location[2] += distanceToScene * direction[2];
+		location[0] += distanceToScene * _direction[0];
+    location[1] += distanceToScene * _direction[1];
+    location[2] += distanceToScene * _direction[2];
 	}
 	return [location, distanceToScene, hitObject];
 }
@@ -79,37 +77,23 @@ function colourAndLight(_location, _sceneObjects, _hitObject, _lights) {
 			var lightDirection = normalize(subtractVector(_lights[i], location));
 			var brightness = Math.max(dotProduct(lightDirection, normal(location, _sceneObjects)), brightness, 0); // maxes with 0 to prevent negative brighnesses
 		}
-
 		if (_hitObject == 3){ // properly lit ball
 			var directionToLight;
-			var lightTraceData;
-			var objecTraceData;
-			var closestLightObject = far-1;
-			var lightingLocation = location;
-
-			console.log(trace(_location, lightDirection, _sceneObjects)[1]);
-
+			var shadowed = false;
+			
 			for (var i=0; i <= _lights.length - 1; i++) {
-				var lightingLocation = location;
-				
-				directionToLight = normalize(subtractVector(_lights[i], lightingLocation));
-				
-				while (closestLightObject > near/2) {
-					lightTraceData = trace(lightingLocation, directionToLight, _lights);
-					objecTraceData = trace(lightingLocation, directionToLight, _sceneObjects);
-					closestLightObject = Math.min(lightTraceData[1], objecTraceData[1], closestLightObject);
-					lightingLocation[0] += closestLightObject * directionToLight[0];
-					lightingLocation[1] += closestLightObject * directionToLight[1];
-					lightingLocation[2] += closestLightObject * directionToLight[2];
+				directionToLight = normalize(subtractVector(_lights[i], location));
+				shadowed = true;
+				if (trace(_location, directionToLight, _sceneObjects, 0.00001)[1] >= near) {
+					shadowed = false;
 				}
 			}
-			//console.log(lightTraceData[1], objecTraceData[1]);
-			if (lightTraceData[1] <= near){
-				//console.log(lightTraceData[1], objecTraceData[1]);
-				return[255,255,255];
-			}
 		}
-
+		
+		if (shadowed == true) {
+		 brightness = brightness/4;
+		}
+		
 		if (_sceneObjects[_hitObject][4] == 2){ // patterned plane
 			var xPattern = 0;
 			var yPattern = 0;
