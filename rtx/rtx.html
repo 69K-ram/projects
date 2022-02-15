@@ -1,4 +1,4 @@
-<canvas id="canvas" width=300 height=300 style="border: 1px grey solid"> 						<!--creates canvas--> 
+<canvas id="canvas" width=800 height=800 style="border: 1px grey solid"> 						<!--creates canvas--> 
 <script>																																 						// start of js
 var canvas = document.getElementById("canvas");
 var canvas_context = canvas.getContext("2d");														 						// js link to html canvas
@@ -6,7 +6,7 @@ var canvas_buffer = canvas_context.getImageData(0, 0, canvas.width, canvas.heigh
 var canvas_pitch = canvas_buffer.width * 4;
 ///////////////////////////////////////////////////////////////////////////////
 var small   = 0.0001  // very small
-var near    = 0.01;   // close enough for a hit
+var near    = 0.001;   // close enough for a hit
 var far     = 100;    // how far ray can go
 
 var bgColour = [7, 155, 219];
@@ -17,24 +17,24 @@ var bgColour = [7, 155, 219];
 // plane x,y,z rotation, w, 1, colour
 // x,y,z, radius, type (0-circle, 1-cube, 2-plane), absorption/reflection (0-1)
 var scene = [
-//  x   y    z      o    r    g    b
-	[-3, -1, -15,  3, 0, 255,   0,   0],
-	[ 0,  1,   0, 10, 2, 144,  14, 204, 250, 253, 15],
-	[ 3,  1, -18, 3,  0,  15, 255,  80],
-	[ 5,  3, -15, 3,  0,  15, 255,  80],
+//x   y    z   r  t  r      r    g    b
+[-3, -1, -15,  3, 0, 0.5,  100,   100,   100],
+[ 0,  1,   0, 10, 2, 0,   144,  14, 204, 250, 253, 15],
+[ 3,  1, -20, 3,  0, 0,   15,  255,   80],
+[ 5,  3, -15, 3,  0, 0,   15,  255,   80],
 ];
 var balls = [
-	[-3, -5, -15, 3, 0],
-	[3, -5, -15, 3, 0],
-	[0, -5, -15, 2, 0],
-	[0, -4, -15, 2, 0],
-	[0, -3, -15, 2, 0],
-	[0, -2, -15, 2, 0],
-	[0, -1, -15, 2, 0],
-	[0, 0, -15, 2, 0],
-	[0, 1, -15, 2, 0],
-	[0, 2, -15, 1.9, 0],
-	[0, 3, -15, 2.2, 0],
+[-3, -5, -15, 3, 0],
+[3, -5, -15, 3, 0],
+[0, -5, -15, 2, 0],
+[0, -4, -15, 2, 0],
+[0, -3, -15, 2, 0],
+[0, -2, -15, 2, 0],
+[0, -1, -15, 2, 0],
+[0, 0, -15, 2, 0],
+[0, 1, -15, 2, 0],
+[0, 2, -15, 1.9, 0],
+[0, 3, -15, 2.2, 0],
 ];
 // x,y,z, brightness (0-1)
 var light = [
@@ -44,115 +44,123 @@ var light = [
 ///////////////////////////////////////////////////////////////////////////////
 function pixel(_x, _y) { // called for each pixel
 	var _pathdirection = normalize(CanvasToViewport([_x, _y]));
+	_pathdirection[0];
+	_pathdirection = normalize(_pathdirection);
 	var _position  = [0,0,0];
 	var traceData = trace(_position, _pathdirection, scene, near);
 	if (traceData[1] <= near){
-		return colourAndLight(traceData[0], scene, traceData[2], light);
+		return colourAndLight(traceData[0], scene, traceData[2], light, _pathdirection, scene[traceData[2]][5]);
 	}
 	return bgColour;
 }
 
 function trace(_startLocation, _direction, _sceneSelected, _hitDist){
-	var location  = _startLocation;
-	var distanceTravelled = 0;
-	var distanceToScene   = far-1;
-
+	let location  = _startLocation;
+	let distanceTravelled = 0;
+	let distanceToScene   = far-1;
+	let hitObject;
 	while (distanceTravelled < far && distanceToScene > _hitDist) {
 		var distanceData = sceneDistance(location, _sceneSelected);
 		distanceToScene = distanceData[0];
-		var hitObject = distanceData[1];
+		hitObject = distanceData[1];
 
 		distanceTravelled += distanceToScene;
 		location[0] += distanceToScene * _direction[0];
-    location[1] += distanceToScene * _direction[1];
-    location[2] += distanceToScene * _direction[2];
+		location[1] += distanceToScene * _direction[1];
+		location[2] += distanceToScene * _direction[2];
 	}
 	return [location, distanceToScene, hitObject];
 }
 
-function colourAndLight(_location, _sceneObjects, _hitObject, _lights) {
-		var location = _location;
-		var brightness = 0;
-		for (var i=0; i <= _lights.length - 1; i++) {
-			var lightDirection = normalize(subtractVector(_lights[i], location));
-			var brightness = Math.max(dotProduct(lightDirection, normal(location, _sceneObjects)), brightness, 0); // maxes with 0 to prevent negative brighnesses
+function colourAndLight(_location, _sceneObjects, _hitObject, _lights, _rayDir, _reflective) {
+	//calculates brightness based off difference between the surface normal and the direction to the sun. var brightness is between 0-1
+	let brightness = 0;
+	let diffuse = 0
+	let lightDirection;
+ 	let n = normal(_location, _sceneObjects); // normalized
+	let d = _rayDir;
+	let q = dotProduct(d, n);
+	let r = subtractVector(d, multiplyVector([2,2,2], multiplyVector([q,q,q], n)));
+	for (var i=0; i <= _lights.length - 1; i++) {
+		lightDirection = normalize(subtractVector(_lights[i], _location));
+		brightness = Math.max(dotProduct(lightDirection, normal(_location, _sceneObjects)), brightness, 0); // maxes with 0 to prevent negative brighnesses
+		diffuse = Math.max(dotProduct(lightDirection, r), diffuse, 0);
+	}
+	let shadowed = false;
+	for (var i=0; i <= _lights.length - 1; i++) { // loops though each light in the scene
+ 		let directionToLight = normalize(subtractVector(_lights[0], _location)); 
+		if (trace([..._location], directionToLight, _sceneObjects, 0.00000000001)[1] <= near) { // for some reason, this line breaks the pattern for the floor.
+			shadowed = true;
+			brightness /= 2;
 		}
-		if (_hitObject == 3){ // properly lit ball
-			var directionToLight;
-			var shadowed = false;
-			
-			for (var i=0; i <= _lights.length - 1; i++) {
-				directionToLight = normalize(subtractVector(_lights[i], location));
-				shadowed = true;
-				if (trace(_location, directionToLight, _sceneObjects, 0.00001)[1] >= near) {
-					shadowed = false;
-				}
-			}
+	} 
+
+	if (_reflective > 0) {
+		let reflectionTraceData = trace([..._location], r, _sceneObjects, 0.00000000001);
+		let objID = reflectionTraceData[2];
+		let reflColour = bgColour;
+		let selfColour;
+		if (reflectionTraceData[1] >= near) {
+			reflColour = bgColour;
+			return reflColour;
 		}
-		
-		if (shadowed == true) {
-		 brightness = brightness/4;
+		if (objID != _hitObject){
+		 reflColour = colourAndLight([...reflectionTraceData[0]], _sceneObjects, objID, _lights, r, 0);
+		 return reflColour;
 		}
-		
-		if (_sceneObjects[_hitObject][4] == 2){ // patterned plane
-			var xPattern = 0;
-			var yPattern = 0;
-			if (Math.abs(location[2]%4) >= 4 || Math.abs(location[2]%4) <= 2){
-				xPattern = 1;
-			}
-			if (Math.abs(location[0]%4) >= 4 || Math.abs(location[0]%4) <= 2){
-				yPattern = 1;
-			}
-			if (xPattern == 1){
-				return [
-					_sceneObjects[_hitObject][7] * brightness + ((bgColour[0] + 15)/5),
-					_sceneObjects[_hitObject][9] * brightness + ((bgColour[1] + 15)/5),
-					_sceneObjects[_hitObject][10] * brightness + ((bgColour[2] + 15)/5)
-				];
+		selfColour = colourAndLight([..._location], _sceneObjects, _hitObject, _lights, r, 0);
+		//return addVector(multiplyVector(reflColour, [_reflective,_reflective,_reflective]), multiplyVector(selfColour, [1-_reflective,1-_reflective,1-_reflective]));
+	}	
+
+	if (_sceneObjects[_hitObject][4] == 2){ // patterned plane
+		if (Math.abs(_location[2]%4) > 4 || Math.abs(_location[2]%4) < 2){
+			return [
+			_sceneObjects[_hitObject][9] * brightness + ((bgColour[0] + 15)/5) + diffuse * 255,
+			_sceneObjects[_hitObject][10] * brightness + ((bgColour[1] + 15)/5) + diffuse * 255,
+			_sceneObjects[_hitObject][11] * brightness + ((bgColour[2] + 15)/5) + diffuse * 255
+			];
 			}
 		}
 		return [
-			_sceneObjects[_hitObject][5] * brightness + ((bgColour[0] + 15)/5),
-			_sceneObjects[_hitObject][6] * brightness + ((bgColour[1] + 15)/5),
-			_sceneObjects[_hitObject][7] * brightness + ((bgColour[2] + 15)/5)
+		_sceneObjects[_hitObject][6] * brightness + ((bgColour[0] + 15)/5) + diffuse * 255,
+		_sceneObjects[_hitObject][7] * brightness + ((bgColour[1] + 15)/5) + diffuse * 255,
+		_sceneObjects[_hitObject][8] * brightness + ((bgColour[2] + 15)/5) + diffuse * 255
 		];
-	
 	//return [normal(location, _sceneObjects)[0] * 255, normal(location, _sceneObjects)[0] * 255, normal(location, _sceneObjects)[0] * 255]; // rainbow 
-	return bgColour;
 }
 
 function sceneDistance(_position, _objects) { // gets distance to scene from point
-	var _distanceToScene   = far-1;
-	var _lastDistance      = _distanceToScene;
-	var _closestObject     = 0;
+	let _distanceToScene   = far-1;
+	let _lastDistance      = _distanceToScene;
+	let _closestObject     = 0;
 	for (var i=0; i <= _objects.length - 1; i++) {
 		_lastDistance = _distanceToScene;
 		switch(_objects[i][4]) { // object type
   		case 0: // sphere
-    		_distanceToScene = Math.min( sdSphere(_position, _objects[i], _objects[i][3]), _distanceToScene);
+  		_distanceToScene = Math.min( sdSphere(_position, _objects[i], _objects[i][3]), _distanceToScene);
     		if (_distanceToScene < _lastDistance){ // if this object is closer
     			_closestObject = i;
     		}
     		break;
   		case 1: // cube
-  			_distanceToScene = Math.min(    sdBox(_position, _objects[i][3]),              _distanceToScene);
+  		_distanceToScene = Math.min(    sdBox(_position, _objects[i][3]),              _distanceToScene);
   			if (_distanceToScene < _lastDistance){ // if this object is closer
-    			_closestObject = i;
-    		}
-    		break;
-    	case 2: // cube
-  			_distanceToScene = Math.min(  sdPlane(_position, _objects[i], _objects[i][3]), _distanceToScene);
-  			if (_distanceToScene < _lastDistance){ // if this object is closer
-    			_closestObject = i;
-    		}
-    		break;
-  		default:
+  				_closestObject = i;
+  			}
   			break;
-    _lastDistance = _distanceToScene;
-		}
-	} 
-	return [_distanceToScene, _closestObject];
-}
+    	case 2: // cube
+    	_distanceToScene = Math.min(  sdPlane(_position, _objects[i], _objects[i][3]), _distanceToScene);
+  			if (_distanceToScene < _lastDistance){ // if this object is closer
+  				_closestObject = i;
+  			}
+  			break;
+  			default:
+  			break;
+  			_lastDistance = _distanceToScene;
+  		}
+  	} 
+  	return [_distanceToScene, _closestObject];
+  }
 ///////////////////////////////////////////////////////////////////////////////
 // vector math functions
 function clamp(num, min, max) {
@@ -162,45 +170,52 @@ function absVector(_vector) {
 	return [Math.abs(_vector[0]), Math.abs(_vector[1]), Math.abs(_vector[1])];
 }
 function dotProduct(_vector1, _vector2) {
-	 return (_vector1[0] * _vector2[0]) + (_vector1[1] * _vector2[1]) + (_vector1[2] * _vector2[2]);
+	return (_vector1[0] * _vector2[0]) + (_vector1[1] * _vector2[1]) + (_vector1[2] * _vector2[2]);
 }
 function crossProduct(_vector1, _vector2) {
 	return [
 	  (_vector1[1] * _vector2[2]) - (_vector1[2] * _vector2[1]), // x
 	  (_vector1[2] * _vector2[0]) - (_vector1[0] * _vector2[2]), // y
 	  (_vector1[0] * _vector2[1]) - (_vector1[1] * _vector2[0])  // y
-  ];
-}
-function length(vector) {
-	return Math.sqrt(vector[0]**2 + vector[1]**2 + vector[2]**2);
-}
-function normalize(_vector) {
-    return ([
-    		_vector[0] / length(_vector),
-    		_vector[1] / length(_vector),
-    		_vector[2] / length(_vector)
-    ]);
-}
-function subtractVector(_vector1, _vector2) {
-    return ([
-    		_vector1[0]-_vector2[0],
-    		_vector1[1]-_vector2[1],
-    		_vector1[2]-_vector2[2]
-    ]);
-}
-function addVector(_vector1, _vector2) {
-    return ([
-    		_vector1[0]+_vector2[0],
-    		_vector1[1]+_vector2[1],
-    		_vector1[2]+_vector2[2]
-    ]);
-}
+	  ];
+	}
+	function length(vector) {
+		return Math.sqrt(vector[0]**2 + vector[1]**2 + vector[2]**2);
+	}
+	function normalize(_vector) {
+		return ([
+			_vector[0] / length(_vector),
+			_vector[1] / length(_vector),
+			_vector[2] / length(_vector)
+			]);
+	}
+	function subtractVector(_vector1, _vector2) {
+		return ([
+			_vector1[0]-_vector2[0],
+			_vector1[1]-_vector2[1],
+			_vector1[2]-_vector2[2]
+			]);
+	}
+	function addVector(_vector1, _vector2) {
+		return ([
+			_vector1[0]+_vector2[0],
+			_vector1[1]+_vector2[1],
+			_vector1[2]+_vector2[2]
+			]);
+	}
+	function multiplyVector(_vector1, _vector2) {
+		return ([
+			_vector1[0]*_vector2[0],
+			_vector1[1]*_vector2[1],
+			_vector1[2]*_vector2[2]
+			]);
+	}
 function normal(_p, _scene) { // estimate surface normal at location
 	return normalize([
     sceneDistance([_p[0] + small, _p[1], _p[2]], _scene)[0] - sceneDistance([_p[0] - small, _p[1], _p[2]], _scene)[0], // [0] is closest distance
     sceneDistance([_p[0], _p[1] + small, _p[2]], _scene)[0] - sceneDistance([_p[0], _p[1] - small, _p[2]], _scene)[0],
     sceneDistance([_p[0], _p[1], _p[2] + small], _scene)[0] - sceneDistance([_p[0], _p[1], _p[2] - small], _scene)[0]
-  ]);
+    ]);
 }
 // sdfs
 function sdSphere(p, sphereCentre, sphereRadius) { // distance to a sphere
@@ -208,10 +223,10 @@ function sdSphere(p, sphereCentre, sphereRadius) { // distance to a sphere
 }
 
 function sdBox(p, box, size){
-  var d = subtractVector([Math.abs(p[0]), Math.abs(p[1]), Math.abs(p[2])], [size, size, size]);
-  var insideDist = Math.min(Math.max(d[0], Math.max(d[1], d[2])), 0.0);
-  var outsideDist = length(Math.max(d, 0.0));
-  return insideDist + outsideDist;
+	var d = subtractVector([Math.abs(p[0]), Math.abs(p[1]), Math.abs(p[2])], [size, size, size]);
+	var insideDist = Math.min(Math.max(d[0], Math.max(d[1], d[2])), 0.0);
+	var outsideDist = length(Math.max(d, 0.0));
+	return insideDist + outsideDist;
 }
 
 function sdPlane(p, normal, dist) { // distance to a sphere
@@ -221,17 +236,17 @@ function sdPlane(p, normal, dist) { // distance to a sphere
 // canvas drawing functions
 function renderCanvas(_canvasWidth, _canvasHeight) {
 	for (var _canvasX = -_canvasWidth/2; _canvasX <= _canvasWidth/2; _canvasX++) {
-  		for (var _canvasY = -_canvasHeight/2; _canvasY <= _canvasHeight/2; _canvasY++) {
-  			PutPixel(_canvasX, _canvasY, pixel(_canvasX, _canvasY));
-  		}
-  	}
-  	UpdateCanvas();
+		for (var _canvasY = -_canvasHeight/2; _canvasY <= _canvasHeight/2; _canvasY++) {
+			PutPixel(_canvasX, _canvasY, pixel(_canvasX, _canvasY));
+		}
+	}
+	UpdateCanvas();
 }
 var PutPixel = function(x, y, color) {
 	x = canvas.width/2 + x;
 	y = canvas.height/2 - y - 1;
 	if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) {
-    	return;
+		return;
 	}
 	var offset = 4*x + canvas_pitch*y;
 	canvas_buffer.data[offset++] = color[0];
@@ -241,15 +256,16 @@ var PutPixel = function(x, y, color) {
 }
 
 var UpdateCanvas = function() {
-  canvas_context.putImageData(canvas_buffer, 0, 0);
+	canvas_context.putImageData(canvas_buffer, 0, 0);
 }
 
 // Converts 2D canvas coordinates to 3D viewport coordinates.
 var CanvasToViewport = function(p2d) {
-  return [p2d[0] / canvas.width,
-  p2d[1] / canvas.height,
-  -1];
+	return [p2d[0] / canvas.width,
+	p2d[1] / canvas.height,
+	-1];
 }
 ///////////////////////////////////////////////////////////////////////////////
 renderCanvas(canvas.width, canvas.height);
+console.log("Done!");
 </script>
