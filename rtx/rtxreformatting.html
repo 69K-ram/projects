@@ -1,7 +1,7 @@
-<canvas id="canvas" width=300 height=300 style="border: 1px grey solid"> 						<!--creates canvas--> 
+<canvas id="canvas" width=1000 height=1000 style="border: 1px grey solid"> 						<!--creates canvas--> 
 <script>																																 						// start of js
 var canvas = document.getElementById("canvas");
-var canvas_context = canvas.getContext("2d");														 						// js link to html canvas
+var canvas_context = canvas.getContext("2d");												 						// js link to html canvas
 var canvas_buffer = canvas_context.getImageData(0, 0, canvas.width, canvas.height); // array of canvas pixels
 var canvas_pitch = canvas_buffer.width * 4;
 /////////////////////////////////////////////////////////////
@@ -60,250 +60,185 @@ class Vector3 {
     this.z / scalar); 
   }
   length () {
-		return Math.sqrt(this.x**2) + Math.sqrt(this.y**2) + Math.sqrt(this.z**2);
+		return Math.sqrt(this.x**2 + this.y**2 + this.z**2);
   }
   normalize () {
     let q = this.length();
-  	return new Vector3 (this.x / q, this.y / q, this.z / q);
+  	return new Vector3(this.x / q, this.y / q, this.z / q);
+  }
+  dotProduct (vector) {
+  	return (this.x * vector.x) + (this.y * vector.y) + (this.z * vector.z);
+  }
+  crossProduct (vector) {
+  	return new Vector3(
+  		(this.y * vector.z) - (this.z * vector.y), // x
+  		(this.z * vector.x) - (this.z * vector.z), // y
+  		(this.x * vector.y) - (this.z * vector.x));// z
+  }
+  abs () {
+  	return new Vector3 (Math.abs(this.x), Math.abs(this.y), Math.abs(this.z));
   }
 }
-class Colour {
-	contructor (r = 0, g = 0, b = 0) {
-  	this.r = r;
-    this.g = g;
-    this.g = b;
-  }
-}
+
 class Material { 
-	constructor(colour, transparency, roughness, reflectivity) {
+	constructor(colour = new Vector3(0,0,0), transparency = 0, diffuse = 0, reflectivity = 0, emmisive) {
   	this.colour = colour; 
     this.transparency = transparency; // 0-1
-    this.roughness = roughness;       // 0-1
+    this.diffuse = diffuse;           // 0-1
     this.reflectivity = reflectivity; // 0-1
   }
+  colour () {return this.colour}
+  transparency () {return this.transparency}
+  diffuse () {return this.diffuse}
+  reflectivity () {return this.reflectivity}
 }
-class sphere {
-	constructor (x=0, y=0, z=0, r=0, material = new Material(new Colour(0,0,0), 0,0,0) ) {
-  	this.x = x;
-    this.y = y;
-    this.z = z;
-    this.r = r; // radius
-    this.material = material;
+
+class Camera {
+	constructor(position = new Vector3(0,0,0), direction = new Vector3(0,0,0), fov = 60) {
   }
 }
-//////////////////
-var small   = 0.0001  // very small
-var near    = 0.001;   // close enough for a hit
-var far     = 100;    // how far ray can go
 
-var bgColour = [7, 155, 219];
-//var bgColour = [255, 255, 255];
+class Sphere {
+	constructor (position = new Vector3(0,0,0), r=0, material = new Material(new Vector3(0,0,0), 0,0,0) ) {
+		this.name = "Sphere";
+  	this.location = position;
+  	this.x = position.x;
+    this.y = position.y;
+    this.z = position.z;
+    this.radius = r; // radius
+    this.material = material;
+    this.colour = material.colour
+  }
+}
 ///////////////////////////////////////////////////////////////////////////////
-//test scene objects
-// sphere x,y,z, radius, 0, colour
-// plane x,y,z rotation, w, 1, colour
-// x,y,z, radius, type (0-circle, 1-cube, 2-plane), absorption/reflection (0-1)
-var scene = [
-//x   y    z   r  t  r      r    g    b
-[-3, -1, -15,  3, 0, 0.5,  100,   100,   100],
-[ 0,  1,   0, 10, 2, 0,   144,  14, 204, 250, 253, 15],
-[ 3,  1, -20, 3,  0, 0,   15,  255,   80],
-[ 5,  3, -15, 3,  0, 0,   15,  255,   80],
+const green = new Vector3(15, 255, 80); // colour
+const blue = new Vector3(0, 153, 255);
+const red = new Vector3(255, 0, 0);
+const testmat = new Material(green, 0, 0, 0); // material
+const bluemat = new Material(blue, 0, 0, 0,); 
+const redmat = new Material(red, 0,0,0);
+
+const scene = [
+	new Sphere(new Vector3(-3, 0, -10), 2, testmat),
+	new Sphere(new Vector3(3, 0, -10), 2, bluemat),
+	new Sphere(new Vector3(0, 0, -15), 2, redmat)
 ];
-var balls = [
-[-3, -5, -15, 3, 0],
-[3, -5, -15, 3, 0],
-[0, -5, -15, 2, 0],
-[0, -4, -15, 2, 0],
-[0, -3, -15, 2, 0],
-[0, -2, -15, 2, 0],
-[0, -1, -15, 2, 0],
-[0, 0, -15, 2, 0],
-[0, 1, -15, 2, 0],
-[0, 2, -15, 1.9, 0],
-[0, 3, -15, 2.2, 0],
-];
-// x,y,z, brightness (0-1)
-var light = [
-	[-5, 20, -10, 2, 0],
-	[0, 20, 0, 2, 0]
-];
+const lights = [
+	new Sphere(new Vector3(0, 20, -10), 2),
+	new Sphere(new Vector3(0, 25, 10), 2)
+]
+///////////////////////////
+const small   = 0.0001   // very small
+const near    = 0.001;   // close enough for a hit
+const far     = 100;     // how far ray can go
+
+const bgColour = new Vector3(100, 100, 100);
 ///////////////////////////////////////////////////////////////////////////////
 function pixel(_x, _y) { // called for each pixel
-	let _pathdirection = CanvasToViewport([_x, _y]).normalize();
-	let _position = new Vector3(0,0,0);
-	let traceData = trace(_position, _pathdirection, scene, near);
-	if (traceData[1] <= near){
-		return colourAndLight(traceData[0], scene, traceData[2], light, _pathdirection, scene[traceData[2]][5]);
-	}
-	return bgColour;
+	let position = new Vector3(0,0,0);
+	let raydirection = new Vector3(
+		_x / canvas.width,
+		_y / canvas.height,
+		-1).normalize();
+	return trace(position, raydirection, scene, 0);
+	
 }
 
-function trace(location, direction, sceneSelected, hitDist){ // start location, direction, objects to be checking, and distance to count as a hit
+function trace(location, raydirection, sceneSelected, depth){ // direction, objects to be checking, recursive depth
 	let distanceTravelled = 0;
 	let distanceToScene   = far-1;
-	let hitObject;
-	while (distanceTravelled < far && distanceToScene > _hitDist) {
-		var distanceData = sceneDistance(location, sceneSelected);
+	let hitObject = -1; // defaults to no hit
+
+	while (distanceTravelled <= far && distanceToScene >= near) {
+		let distanceData = sceneDistance(location, sceneSelected);
 		distanceToScene = distanceData[0];
-		hitObject = distanceData[1];
+		hitObject       = distanceData[1];
 
-		distanceTravelled += distanceToScene;
-		location[0] += distanceToScene * _direction[0];
-		location[1] += distanceToScene * _direction[1];
-		location[2] += distanceToScene * _direction[2];
+		distanceTravelled += distanceToScene; // keep track of how far ray has moved
+		location = location.add(raydirection.multiplyScalar(distanceToScene)); // advance the ray
 	}
-	return [location, distanceToScene, hitObject];
+	if (distanceToScene <= near) { // if ray hits an object, calculate the colour of the pixel
+		return surface(location, raydirection, sceneSelected, hitObject);
+	}
+	return bgColour; // else just return the background colour
 }
-
-function colourAndLight(_location, _sceneObjects, _hitObject, _lights, _rayDir, _reflective) {
-	//calculates brightness based off difference between the surface normal and the direction to the sun. var brightness is between 0-1
+function surface (location, raydirection, sceneSelected, hitObject) {
 	let brightness = 0;
-	let diffuse = 0
+	let diffuse = 0;
+
 	let lightDirection;
- 	let n = normal(_location, _sceneObjects); // normalized
-	let d = _rayDir;
-	let q = dotProduct(d, n);
-	let r = subtractVector(d, multiplyVector([2,2,2], multiplyVector([q,q,q], n)));
-	for (var i=0; i <= _lights.length - 1; i++) {
-		lightDirection = normalize(subtractVector(_lights[i], _location));
-		brightness = Math.max(dotProduct(lightDirection, normal(_location, _sceneObjects)), brightness, 0); // maxes with 0 to prevent negative brighnesses
-		diffuse = Math.max(dotProduct(lightDirection, r), diffuse, 0);
+ 	let n = normal(location, sceneSelected); // normalized
+	let d = raydirection;
+	let q = d.dotProduct(n);
+	let k = n.multiplyScalar(q);
+	k = k.multiplyScalar(2)
+	let r = d.subtract(k);
+	for (var i=0; i <= lights.length - 1; i++) {
+		lightDirection = lights[i].location.subtract(location).normalize();
+		brightness = Math.max(lightDirection.dotProduct(normal(location, sceneSelected)), brightness, 0); // maxes with 0 to prevent negative brighnesses
+		diffuse = Math.max(lightDirection.dotProduct(r.normalize()), diffuse, 0) // maxes with 0 to prevent negative diffuse
 	}
-	let shadowed = false;
-	for (var i=0; i <= _lights.length - 1; i++) { // loops though each light in the scene
- 		let directionToLight = normalize(subtractVector(_lights[0], _location)); 
-		if (trace([..._location], directionToLight, _sceneObjects, 0.00000000001)[1] <= near) { // for some reason, this line breaks the pattern for the floor.
-			shadowed = true;
-			brightness /= 2;
-		}
-	} 
-
-	if (_reflective > 0) {
-		let reflectionTraceData = trace([..._location], r, _sceneObjects, 0.00000000001);
-		let objID = reflectionTraceData[2];
-		let reflColour = bgColour;
-		let selfColour;
-		if (reflectionTraceData[1] >= near) {
-			reflColour = bgColour;
-			return reflColour;
-		}
-		if (objID != _hitObject){
-		 reflColour = colourAndLight([...reflectionTraceData[0]], _sceneObjects, objID, _lights, r, 0);
-		 return reflColour;
-		}
-		selfColour = colourAndLight([..._location], _sceneObjects, _hitObject, _lights, r, 0);
-		//return addVector(multiplyVector(reflColour, [_reflective,_reflective,_reflective]), multiplyVector(selfColour, [1-_reflective,1-_reflective,1-_reflective]));
-	}	
-
-	if (_sceneObjects[_hitObject][4] == 2){ // patterned plane
-		if (Math.abs(_location[2]%4) > 4 || Math.abs(_location[2]%4) < 2){
-			return [
-			_sceneObjects[_hitObject][9] * brightness + ((bgColour[0] + 15)/5) + diffuse * 255,
-			_sceneObjects[_hitObject][10] * brightness + ((bgColour[1] + 15)/5) + diffuse * 255,
-			_sceneObjects[_hitObject][11] * brightness + ((bgColour[2] + 15)/5) + diffuse * 255
-			];
-			}
-		}
-		return [
-		_sceneObjects[_hitObject][6] * brightness + ((bgColour[0] + 15)/5) + diffuse * 255,
-		_sceneObjects[_hitObject][7] * brightness + ((bgColour[1] + 15)/5) + diffuse * 255,
-		_sceneObjects[_hitObject][8] * brightness + ((bgColour[2] + 15)/5) + diffuse * 255
-		];
-	//return [normal(location, _sceneObjects)[0] * 255, normal(location, _sceneObjects)[0] * 255, normal(location, _sceneObjects)[0] * 255]; // rainbow 
+	//let shadowed = false;
+	//for (var i=0; i <= lights.length - 1; i++) { // loops though each light in the scene
+	//	let directionToLight = lights[i].location.subtract(location).normalize();
+	//	if (trace([..._location], directionToLight, sceneSelected, 0.00000000001)[1] <= near) { // for some reason, this line breaks the pattern for the floor.
+	//		shadowed = true;
+	//		brightness /= 2;
+	//	}
+	//} 
+	//return normal(location, sceneSelected).multiplyScalar(255); // rainbow
+	return new Vector3(
+		(sceneSelected[hitObject].colour.x + diffuse * 128) * brightness + (bgColour.x /5),
+		(sceneSelected[hitObject].colour.y + diffuse * 128) * brightness + (bgColour.y /5),
+		(sceneSelected[hitObject].colour.z + diffuse * 128) * brightness + (bgColour.z /5)
+	);
 }
-
 function sceneDistance(position, sceneObjects) { // gets distance to scene from point
-	let distanceToScene   = far-1;
-	let lastDistance      = _distanceToScene;
-	let closestObject     = 0;
-	for (var i=0; i <= sceneObjects.length - 1; i++) {
+	let distanceToScene   = far-1; // starts as far away as possible
+	let lastDistance      = distanceToScene; // used to check if a new object is closer
+	let closestObject     = -1; // starts at nothing
+
+	for (var i=0; i <= sceneObjects.length - 1; i++) { // loop through each object in the scene, find the closest
 		lastDistance = distanceToScene;
-		switch(objects[i][4]) { // object type
-  		case 0: // sphere
-  		distanceToScene = Math.min( sdSphere(position, objects[i], objects[i][3]), distanceToScene);
+
+		switch(sceneObjects[i].name) { // object type
+  		case "Sphere": // sphere
+  		distanceToScene = Math.min( sdSphere(position, sceneObjects[i].location, sceneObjects[i].radius), distanceToScene);
     		if (distanceToScene < lastDistance){ // if this object is closer
     			closestObject = i;
     		}
     		break;
-  		case 1: // cube
-  		_distanceToScene = Math.min(    sdBox(position, objects[i][3]),              distanceToScene);
-  			if (distanceToScene < _astDistance){ // if this object is closer
-  				closestObject = i;
-  			}
-  			break;
-    	case 2: // plane
-    	distanceToScene = Math.min(  sdPlane(position, objects[i], objects[i][3]), distanceToScene);
+
+  		case "Cube": // cube
+  		distanceToScene = Math.min( sdBox(position, sceneObjects[i]), distanceToScene);
   			if (distanceToScene < lastDistance){ // if this object is closer
   				closestObject = i;
   			}
   			break;
-  			default:
+
+    	case "Plane": // plane
+    	distanceToScene = Math.min( sdPlane(position, sceneObjects[i].location,), distanceToScene);
+  			if (distanceToScene < lastDistance){ // if this object is closer
+  				closestObject = i;
+  			}
   			break;
-  			lastDistance = distanceToScene;
   		}
+  		lastDistance = distanceToScene;
   	} 
   	return [distanceToScene, closestObject];
-  }
+}
 ///////////////////////////////////////////////////////////////////////////////
-// vector math functions
-function clamp(num, min, max) {
-	return Math.min(Math.max(num, min), max);
+function normal(point, sceneSelected) { // estimate surface normal at location
+	return new Vector3(
+		sceneDistance( point.add(new Vector3(small, 0, 0)), sceneSelected )[0] - sceneDistance( point.subtract(new Vector3(small, 0, 0)), sceneSelected )[0], // [0] is scene distance
+    sceneDistance( point.add(new Vector3(0, small, 0)), sceneSelected )[0] - sceneDistance( point.subtract(new Vector3(0, small, 0)), sceneSelected )[0],
+    sceneDistance( point.add(new Vector3(0, 0, small)), sceneSelected )[0] - sceneDistance( point.subtract(new Vector3(0, 0, small)), sceneSelected )[0]
+		).normalize(); // normalized
+
 }
-function absVector(_vector) {
-	return [Math.abs(_vector[0]), Math.abs(_vector[1]), Math.abs(_vector[1])];
-}
-function dotProduct(_vector1, _vector2) {
-	return (_vector1[0] * _vector2[0]) + (_vector1[1] * _vector2[1]) + (_vector1[2] * _vector2[2]);
-}
-function crossProduct(_vector1, _vector2) {
-	return [
-	  (_vector1[1] * _vector2[2]) - (_vector1[2] * _vector2[1]), // x
-	  (_vector1[2] * _vector2[0]) - (_vector1[0] * _vector2[2]), // y
-	  (_vector1[0] * _vector2[1]) - (_vector1[1] * _vector2[0])  // y
-	  ];
-	}
-	function length(vector) {
-		return Math.sqrt(vector[0]**2 + vector[1]**2 + vector[2]**2);
-	}
-	function normalize(_vector) {
-		return ([
-			_vector[0] / length(_vector),
-			_vector[1] / length(_vector),
-			_vector[2] / length(_vector)
-			]);
-	}
-	function subtractVector(_vector1, _vector2) {
-		return ([
-			_vector1[0]-_vector2[0],
-			_vector1[1]-_vector2[1],
-			_vector1[2]-_vector2[2]
-			]);
-	}
-	function addVector(_vector1, _vector2) {
-		return ([
-			_vector1[0]+_vector2[0],
-			_vector1[1]+_vector2[1],
-			_vector1[2]+_vector2[2]
-			]);
-	}
-	function multiplyVector(_vector1, _vector2) {
-		return ([
-			_vector1[0]*_vector2[0],
-			_vector1[1]*_vector2[1],
-			_vector1[2]*_vector2[2]
-			]);
-	}
-function normal(_p, _scene) { // estimate surface normal at location
-	return normalize([
-    sceneDistance([_p[0] + small, _p[1], _p[2]], _scene)[0] - sceneDistance([_p[0] - small, _p[1], _p[2]], _scene)[0], // [0] is closest distance
-    sceneDistance([_p[0], _p[1] + small, _p[2]], _scene)[0] - sceneDistance([_p[0], _p[1] - small, _p[2]], _scene)[0],
-    sceneDistance([_p[0], _p[1], _p[2] + small], _scene)[0] - sceneDistance([_p[0], _p[1], _p[2] - small], _scene)[0]
-    ]);
-}
-// sdfs
-function sdSphere(point, sphereCentre, sphereRadius) { // distance to a sphere
-	return sphereCentre length(subtractVector(sphereCentre, p)) - sphereRadius;
+///////////////////////// sdfs
+function sdSphere(point, centre, radius) { // distance to a sphere
+	return (centre.subtract(point)).length() - radius;
 }
 
 function sdBox(p, box, size){
@@ -326,16 +261,16 @@ function renderCanvas(_canvasWidth, _canvasHeight) {
 	}
 	UpdateCanvas();
 }
-var PutPixel = function(x, y, color) {
+var PutPixel = function(x, y, colour) {
 	x = canvas.width/2 + x;
 	y = canvas.height/2 - y - 1;
 	if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) {
 		return;
 	}
 	var offset = 4*x + canvas_pitch*y;
-	canvas_buffer.data[offset++] = color[0];
-	canvas_buffer.data[offset++] = color[1];
-	canvas_buffer.data[offset++] = color[2];
+	canvas_buffer.data[offset++] = colour.x;
+	canvas_buffer.data[offset++] = colour.y;
+	canvas_buffer.data[offset++] = colour.z;
 	canvas_buffer.data[offset++] = 255; // Alpha = 255 (full opacity)
 }
 
@@ -350,6 +285,7 @@ var CanvasToViewport = function(p2d) {
 	-1);
 }
 ///////////////////////////////////////////////////////////////////////////////
-renderCanvas(canvas.width, canvas.height);
+
+renderCanvas(canvas.width, canvas.height);	
 console.log("Done!");
 </script>
