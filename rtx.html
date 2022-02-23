@@ -1,4 +1,4 @@
-<canvas id="canvas" width=500 height=500 style="border: 1px grey solid"> 						<!--creates canvas--> 
+<canvas id="canvas" width=1000 height=1000 style="border: 1px grey solid"> 						<!--creates canvas--> 
 <script>																																 						// start of js
 var canvas = document.getElementById("canvas");
 var canvas_context = canvas.getContext("2d");												 								// js link to html canvas
@@ -137,8 +137,8 @@ const red = new Vector3(255, 0, 0);
 const yellow = new Vector3(100, 100, 100);
 
 const testmat = new Material(green, 0, 0, 0.1, 0); // material. only the reflection property is used yet
-const bluemat = new Material(blue, 0, 0, 0.1, 0); 
-const redmat = new Material(red, 0, 0, 0.1, 0);
+const bluemat = new Material(blue, 0, 0, 0.5, 0); 
+const redmat = new Material(red, 0, 0, 0, 0);
 const floor = new Material(yellow, 0, 0, 0.9, 0);
 
 const scene = [
@@ -221,31 +221,40 @@ function surface (location, raydirection, sceneSelected, hitObject, depth) {
 	for (var i=0; i < lights.length; i++) { // loops though each light in the scene
 
 		let directionToLight = lights[i].location.subtract(location).normalize();
-		shadowRayData = trace(location.copy(), directionToLight, sceneSelected, small);
-		shadowObject = shadowRayData[2];
+		let shadowRayData = trace(location.copy(), directionToLight, sceneSelected, small);
+		let shadowObject = shadowRayData[2];
 		// 0-location 1-dist to scene 2-hit object
 	
-		if (shadowRayData[1] >= near) { // distance to scene >= near means didnt hit anything on the way to the light
-
+		if (shadowRayData[1] >= near) { // directly illuminated
 			brightness = Math.max(directionToLight.dotProduct(normal(location, sceneSelected)) * lights[i].radius, brightness, 0); // maxes with 0 to prevent negative brighnesses
 			diffuse = Math.max(directionToLight.dotProduct(reflectedRay.normalize()), diffuse, 0) // maxes with 0 to prevent negative diffuse
 		}
-		else if (sceneSelected[shadowObject].material.reflectivity > 0) { // if the object the shadow ray hit is reflective the original object could still be in //light
-			let directionToLight = lights[i].location.subtract(location).normalize();
-			shadowRayData = trace(location.copy(), directionToLight, sceneSelected, small);
-
-			if (shadowRayData[1] >= near) { // distance to scene >= near means didnt hit anything on the way to the light
-				brightness = Math.max(directionToLight.dotProduct(normal(location, sceneSelected)) * lights[i].radius, brightness, 0); // maxes with 0 to prevent negative brighnesses
-				brightness *= sceneSelected[shadowObject].material.reflectivity *= sceneSelected[hitObject].material.reflectivity;
-				diffuse = Math.max(directionToLight.dotProduct(reflectedRay.normalize()), diffuse, 0) // maxes with 0 to prevent negative diffuse
-			}
+		
+		else if (sceneSelected[shadowObject].material.reflectivity > 0) { // if the object the shadow ray hit is reflective the original object could still be revieving light
+			let brightnessDepth = 0;
+			let lightRayLocation = location.copy();
+			let accumulatedBrightness = sceneSelected[hitObject].material.reflectivity;
+				while (brightnessDepth < maxDepth && shadowRayData[1] <= near) {
+					brightnessDepth = brightnessDepth + 1;
+					
+					directionToLight = lights[i].location.subtract(lightRayLocation).normalize();
+					shadowRayData = trace(lightRayLocation.copy(), directionToLight, sceneSelected, small);
+					lightRayLocation = shadowRayData[0];
+					shadowObject = shadowRayData[2];
+					if (shadowObject > -1){
+						accumulatedBrightness += sceneSelected[shadowObject].material.reflectivity;
+					}
+				}
+			brightness += Math.max(directionToLight.dotProduct(normal(lightRayLocation, sceneSelected)) * lights[i].radius, brightness, 0);
+			brightness *= accumulatedBrightness;
+			diffuse = Math.max(directionToLight.dotProduct(reflectedRay.normalize()), diffuse, 0) // maxes with 0 to prevent negative diffuse
+			brightness /= brightnessDepth;	
 		}
-
 		else { // shadow
  			diffuse = Math.max(directionToLight.dotProduct(reflectedRay.normalize()), diffuse, 0) // maxes with 0 to prevent negative diffuse
 			brightness = Math.max(directionToLight.dotProduct(normal(location, sceneSelected)) * lights[i].radius * 0.5, brightness, 0);
 		}
-	}
+}
 
 	brightness = Math.max(ambientLight, brightness); // don't let it get too dark
   brightness = Math.min(brightness, 1); // dont let it get too bright
