@@ -1,7 +1,7 @@
-<canvas id="canvas" width=800 height=800 style="border: 1px grey solid"> 						<!--creates canvas--> 
+<canvas id="canvas" width=500 height=500 style="border: 1px grey solid"> 						<!--creates canvas--> 
 <script>																																 						// start of js
 var canvas = document.getElementById("canvas");
-var canvas_context = canvas.getContext("2d");												 						// js link to html canvas
+var canvas_context = canvas.getContext("2d");												 								// js link to html canvas
 var canvas_buffer = canvas_context.getImageData(0, 0, canvas.width, canvas.height); // array of canvas pixels
 var canvas_pitch = canvas_buffer.width * 4;
 /////////////////////////////////////////////////////////////
@@ -90,13 +90,13 @@ class Material {
     this.diffuse = diffuse;           // 0-1
     this.reflectivity = reflectivity; // 0-1
   }
-  colour () {return this.colour}
-  transparency () {return this.transparency}
-  diffuse () {return this.diffuse}
-  reflectivity () {return this.reflectivity}
+  colour () { return this.colour }
+  transparency () { return this.transparency }
+  diffuse () { return this.diffuse }
+  reflectivity () {return this.reflectivity }
 }
 
-class Camera {
+class Camera { // not used yet
 	constructor(position = new Vector3(0,0,0), direction = new Vector3(0,0,0), fov = 60) {
   }
 }
@@ -116,6 +116,7 @@ class Sphere {
   	return material;
   }
 }
+
 class Plane {
 	constructor (normal = new Vector3(0,0,), height = 0, material = new Material(new Vector3(0,0,0), 0,0,0) ) {
 		this.name = "Plane";
@@ -128,13 +129,14 @@ class Plane {
     this.colour = material.colour
   }
 }
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const green = new Vector3(15, 255, 80); // colour
 const blue = new Vector3(0, 153, 255);
 const red = new Vector3(255, 0, 0);
-const yellow = new Vector3(255, 255, 0);
+const yellow = new Vector3(100, 100, 100);
 
-const testmat = new Material(green, 0, 0, 1, 0); // material
+const testmat = new Material(green, 0, 0, 0.1, 0); // material. only the reflection property is used yet
 const bluemat = new Material(blue, 0, 0, 0.1, 0); 
 const redmat = new Material(red, 0, 0, 0.1, 0);
 const floor = new Material(yellow, 0, 0, 0.9, 0);
@@ -149,21 +151,23 @@ const scene = [
 
 	new Plane(new Vector3(0,1,0), 2, floor)
 ];
+
 const lights = [
-	new Sphere(new Vector3(0, 20, -10), 1), // radius is brightness 0-1
-  new Sphere(new Vector3(0, 200, -10), 1), // radius is brightness 0-1
-	new Sphere(new Vector3(40, 100, 0), 0.5),
-  new Sphere(new Vector3(-10, 200, -10), 0.1), // radius is brightness 0-1
-	new Sphere(new Vector3(-50, 150, 0), 0.7)
-]
+	new Sphere(new Vector3(0, 20, -10), 1),    // radius is brightness 0-1
+  new Sphere(new Vector3(0, 200, -10), 1),   // radius is brightness 0-1
+	new Sphere(new Vector3(40, 100, 0), 1),		 // radius is brightness 0-1
+  new Sphere(new Vector3(-10, 200, -10), 1), // radius is brightness 0-1
+	new Sphere(new Vector3(-50, 150, 0), 1)    // radius is brightness 0-1
+];
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const small   = 0.00000000001   // very small
-const near    = 0.001;   // close enough for a hit
-const far     = 100;     // how far ray can go
-const maxDepth = 6;
-const ambientLight = 0.05; // so nothings totaly in shadow
-const bgColour = new Vector3(100, 100, 100);
+const near    = 0.001;   			  // close enough for a hit
+const far     = 100;     				// how far ray can go
+const maxDepth = 3;							// how many times the ray can bounce
+const ambientLight = 0.05; 		  // so nothings totally in shadow
+const bgColour = new Vector3(100, 100, 100); // background colour
 ///////////////////////////////////////////////////////////////////////////////
+
 function pixel(_x, _y) { // called for each pixel
 	let position = new Vector3(0,0,0);
 	let raydirection = new Vector3(
@@ -171,18 +175,20 @@ function pixel(_x, _y) { // called for each pixel
 		_y / canvas.height,
 		-1).normalize();
     
-		rayData = trace(position.copy(), raydirection, scene, near);
-    let hitObject = rayData[2];
-    let distance = rayData[1];
-		let hitLocation = rayData[0];
-		if (distance >= near) { return bgColour; } // if ray doesn't hit anything
+	rayData = trace(position.copy(), raydirection, scene, near);
+   let hitObject = rayData[2];
+   let distance = rayData[1];
+	let hitLocation = rayData[0];
+
+	if (distance >= near) { return bgColour; } // if ray doesn't hit anything
     
-		return surface (hitLocation, raydirection, scene, hitObject, 0);
+	return surface (hitLocation, raydirection, scene, hitObject, 0);
 }
 
-function trace (location, raydirection, sceneSelected, hitDist){ // direction, objects to be checking, recursive depth
-	let distanceTravelled = 0;
-	let distanceToScene   = far-1;
+function trace (location, raydirection, sceneSelected, hitDist) { // marches the ray
+  // direction, objects to be checking, recursive depth
+	let distanceTravelled = 0; // how far ray has gone
+	let distanceToScene   = far-1;	// starts very far away
 	let hitObject = -1; // defaults to no hit
 
 	while (distanceTravelled <= far && distanceToScene >= hitDist) {
@@ -197,7 +203,7 @@ function trace (location, raydirection, sceneSelected, hitDist){ // direction, o
 }
 
 function surface (location, raydirection, sceneSelected, hitObject, depth) {
-	let selfColour; // colour of this object
+	let selfColour = new Vector3(0,0,0); // colour of this object
 	let reflColour = new Vector3(0,0,0); // colour from the reflected object
 
 	let brightness = 0;
@@ -213,32 +219,34 @@ function surface (location, raydirection, sceneSelected, hitObject, depth) {
 	let reflectedRay = d.subtract(k);
 
 	for (var i=0; i < lights.length; i++) { // loops though each light in the scene
+
 		let directionToLight = lights[i].location.subtract(location).normalize();
 		shadowRayData = trace(location.copy(), directionToLight, sceneSelected, small);
 		shadowObject = shadowRayData[2];
 		// 0-location 1-dist to scene 2-hit object
 	
-	if (shadowRayData[1] >= near) { // distance to scene >= near means didnt hit anything on the way to the light
-
-		brightness = Math.max(directionToLight.dotProduct(normal(location, sceneSelected)) * lights[i].radius, brightness, 0); // maxes with 0 to prevent negative brighnesses
-		diffuse = Math.max(directionToLight.dotProduct(reflectedRay.normalize()), diffuse, 0) // maxes with 0 to prevent negative diffuse
-	}
-	else if (sceneSelected[shadowObject].material.reflectivity > 0) { // if the object the shadow ray hit is reflective the original object could still be in //light
-		let directionToLight = lights[i].location.subtract(location).normalize();
-		shadowRayData = trace(location.copy(), directionToLight, sceneSelected, small);
-
 		if (shadowRayData[1] >= near) { // distance to scene >= near means didnt hit anything on the way to the light
+
 			brightness = Math.max(directionToLight.dotProduct(normal(location, sceneSelected)) * lights[i].radius, brightness, 0); // maxes with 0 to prevent negative brighnesses
-			brightness *= sceneSelected[shadowObject].material.reflectivity *= sceneSelected[hitObject].material.reflectivity;
 			diffuse = Math.max(directionToLight.dotProduct(reflectedRay.normalize()), diffuse, 0) // maxes with 0 to prevent negative diffuse
 		}
+		else if (sceneSelected[shadowObject].material.reflectivity > 0) { // if the object the shadow ray hit is reflective the original object could still be in //light
+			let directionToLight = lights[i].location.subtract(location).normalize();
+			shadowRayData = trace(location.copy(), directionToLight, sceneSelected, small);
 
-	} 
-	else { // shadow
- 		diffuse = Math.max(directionToLight.dotProduct(reflectedRay.normalize()), diffuse, 0) // maxes with 0 to prevent negative diffuse
-		brightness = Math.max(directionToLight.dotProduct(normal(location, sceneSelected)) * lights[i].radius * 0.5, brightness, 0);
+			if (shadowRayData[1] >= near) { // distance to scene >= near means didnt hit anything on the way to the light
+				brightness = Math.max(directionToLight.dotProduct(normal(location, sceneSelected)) * lights[i].radius, brightness, 0); // maxes with 0 to prevent negative brighnesses
+				brightness *= sceneSelected[shadowObject].material.reflectivity *= sceneSelected[hitObject].material.reflectivity;
+				diffuse = Math.max(directionToLight.dotProduct(reflectedRay.normalize()), diffuse, 0) // maxes with 0 to prevent negative diffuse
+			}
 		}
-	} 
+
+		else { // shadow
+ 			diffuse = Math.max(directionToLight.dotProduct(reflectedRay.normalize()), diffuse, 0) // maxes with 0 to prevent negative diffuse
+			brightness = Math.max(directionToLight.dotProduct(normal(location, sceneSelected)) * lights[i].radius * 0.5, brightness, 0);
+		}
+	}
+
 	brightness = Math.max(ambientLight, brightness); // don't let it get too dark
   brightness = Math.min(brightness, 1); // dont let it get too bright
 
@@ -267,6 +275,7 @@ function surface (location, raydirection, sceneSelected, hitObject, depth) {
 	reflColour = reflColour.multiplyScalar(sceneSelected[hitObject].material.reflectivity);
   selfColour = selfColour.multiplyScalar(1-sceneSelected[hitObject].material.reflectivity);
   return selfColour.add(reflColour);
+
 }
 
 function sceneDistance(position, sceneObjects) { // gets distance to scene from point
@@ -284,7 +293,7 @@ function sceneDistance(position, sceneObjects) { // gets distance to scene from 
     		closestObject = i;
     	} break;
 
-  		//case "Cube": // cube
+  		//case "Cube": // cube // cant get cubes to work lol
   		//distanceToScene = Math.min( sdBox(position, sceneObjects[i]), distanceToScene);
   		//	if (distanceToScene < lastDistance){ // if this object is closer
   		//		closestObject = i;
