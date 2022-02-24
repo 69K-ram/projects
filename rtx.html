@@ -136,10 +136,10 @@ const blue = new Vector3(0, 153, 255);
 const red = new Vector3(255, 0, 0);
 const yellow = new Vector3(100, 100, 100);
 
-const testmat = new Material(green, 0, 0, 0.01, 0); // material. only the reflection property is used yet
-const bluemat = new Material(blue, 0, 0, 0.3, 0); 
-const redmat = new Material(red, 0, 0, 0.3, 0);
-const floor = new Material(yellow, 0, 0, 0.9, 0);
+const testmat = new Material(green, 0, 0, 0.9, 0); // material. only the reflection property is used yet
+const bluemat = new Material(blue, 0, 0, 0.9, 0); 
+const redmat = new Material(red, 0, 0, 0.9, 0);
+const floor = new Material(yellow, 0, 0, 0.8, 0);
 
 const scene = [
 	new Sphere(new Vector3(-5, 0, -15), 2, testmat),
@@ -153,11 +153,11 @@ const scene = [
 ];
 
 const lights = [
-	new Sphere(new Vector3(0, 20, -10), 1),    // radius is brightness 0-1
-  new Sphere(new Vector3(0, 200, -10), 1),   // radius is brightness 0-1
-	new Sphere(new Vector3(40, 100, 0), 1),		 // radius is brightness 0-1
-  new Sphere(new Vector3(-10, 200, -10), 1), // radius is brightness 0-1
-	new Sphere(new Vector3(-50, 150, 0), 1)    // radius is brightness 0-1
+	new Sphere(new Vector3(0, 20, -10), 0.7),    // radius is brightness 0-1
+  new Sphere(new Vector3(0, 200, -10), 0.56),   // radius is brightness 0-1
+	new Sphere(new Vector3(40, 100, 0), 0.26),		 // radius is brightness 0-1
+  new Sphere(new Vector3(-10, 200, -10), 0.1), // radius is brightness 0-1
+	new Sphere(new Vector3(-50, 150, 0), 0.8)    // radius is brightness 0-1
 ];
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const small   = 0.00000000001   // very small
@@ -203,7 +203,6 @@ function trace (location, raydirection, sceneSelected, hitDist) { // marches the
 }
 
 function surface (location, raydirection, sceneSelected, hitObject, reflectedBrightness, depth) {
-	let accumulatedBrightness = reflectedBrightness;
 	let selfColour = bgColour; // colour of this object
 	let reflColour = bgColour; // colour from the reflected object
 
@@ -228,6 +227,9 @@ function surface (location, raydirection, sceneSelected, hitObject, reflectedBri
 	
 		if (shadowRayData[1] >= near) { // directly illuminated
 			brightness += Math.max(directionToLight.dotProduct(normal(directionToLight, sceneSelected)) * lights[i].radius, brightness, 0);
+			let totalBrightness = Math.max(reflectedBrightness * sceneSelected[hitObject].material.reflectivity, brightness);
+			reflectedBrightness = brightness * sceneSelected[hitObject].material.reflectivity;
+			brightness = totalBrightness;
 			diffuse = Math.max(directionToLight.dotProduct(reflectedRay.normalize()), diffuse, 0) // maxes with 0 to prevent negative diffuse
 		} 
 		else { // shadow
@@ -236,9 +238,8 @@ function surface (location, raydirection, sceneSelected, hitObject, reflectedBri
 		}
 	}
 
-	accumulatedBrightness += brightness * sceneSelected[hitObject].material.reflectivity;
-	accumulatedBrightness = Math.max(ambientLight, accumulatedBrightness); // don't let it get too dark
-  accumulatedBrightness = Math.min(accumulatedBrightness, 1); // dont let it get too bright
+	reflectedBrightness = Math.max(ambientLight, reflectedBrightness); // don't let it get too dark
+  reflectedBrightness = Math.min(reflectedBrightness, 1); // dont let it get too bright
 	brightness = Math.max(ambientLight, brightness); // don't let it get too dark
   brightness = Math.min(brightness, 1); // dont let it get too bright
 
@@ -253,19 +254,19 @@ function surface (location, raydirection, sceneSelected, hitObject, reflectedBri
 		} 
     else {
 			depth++;
-			reflColour = surface(reflectionLocation, reflectedRay, sceneSelected, reflectionObject, accumulatedBrightness, depth)[0];
+			reflColour = surface(reflectionLocation, reflectedRay, sceneSelected, reflectionObject, reflectedBrightness, depth)[0];
 		}
 	}
 
 	//return normal(location, sceneSelected).multiplyScalar(255); // rainbow
 	selfColour = new Vector3( // colour of this hit object
-		(sceneSelected[hitObject].colour.x + diffuse * 128) * accumulatedBrightness + (bgColour.x + 15)/5, //calculating lighting has a lot more than one answer that makes something half decent, settled on this
-		(sceneSelected[hitObject].colour.y + diffuse * 128) * accumulatedBrightness + (bgColour.y + 15)/5,
-		(sceneSelected[hitObject].colour.z + diffuse * 128) * accumulatedBrightness + (bgColour.z + 15)/5
+		(sceneSelected[hitObject].colour.x + diffuse * 128) * brightness + (bgColour.x + 15)/5, //calculating lighting has a lot more than one answer that makes something half decent, settled on this
+		(sceneSelected[hitObject].colour.y + diffuse * 128) * brightness + (bgColour.y + 15)/5,
+		(sceneSelected[hitObject].colour.z + diffuse * 128) * brightness + (bgColour.z + 15)/5
 	);
 	reflColour = reflColour.multiplyScalar(sceneSelected[hitObject].material.reflectivity);
   selfColour = selfColour.multiplyScalar(1-sceneSelected[hitObject].material.reflectivity);
-  return [selfColour.add(reflColour), accumulatedBrightness];
+  return [selfColour.add(reflColour), reflectedBrightness];
 }
 
 function sceneDistance(position, sceneObjects) { // gets distance to scene from point
