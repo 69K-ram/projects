@@ -22,7 +22,7 @@ precision highp float;
 uniform vec2 iResolution;
 uniform vec2 iMouse;
 uniform float iTime;
-// we need to declare an output for the fragment shader
+// output for the fragment shader
 out vec4 outColour;
 
 struct Ray {
@@ -37,16 +37,27 @@ struct Hit {
 	bool inside; // if the ray hit the outside or inside
 };
 
-vec3 at (in Ray r, float t) {
+struct Sphere { 
+    vec3 centre;
+    float radius;
+};
+
+const int WorldLength = 2; // how many objects in the scene
+const Sphere World[WorldLength] = Sphere[WorldLength]( 
+    Sphere( vec3(0.0,0.0,-1.0), 0.5),
+    Sphere( vec3(-1.0,-20.0,-3.0), 19.5)
+);
+    
+vec3 at (in Ray r, float t) { // location of ray at t value
 	return vec3(r.origin + r.direction * t);
 }
-
-bool hitSphere (vec3 centre, float radius, Ray r, inout Hit record, float t_min, float t_max) {
-	vec3 oc = r.origin - centre;
+    
+bool hitSphere (Sphere sphere, Ray r, inout Hit record, float t_min, float t_max) {
+	vec3 oc = r.origin - sphere.centre;
 	
 	float a = dot(r.direction, r.direction);
 	float half_b = dot(oc, r.direction);
-	float c = dot(oc, oc) - radius*radius;
+	float c = dot(oc, oc) - sphere.radius*sphere.radius;
 	
 	float discriminant = half_b*half_b - a*c;
 	if (discriminant < 0.0) { return false; }
@@ -61,15 +72,28 @@ bool hitSphere (vec3 centre, float radius, Ray r, inout Hit record, float t_min,
 	}
 	record.t = root;
 	record.p = at(r, root);
-	record.normal = normalize((record.p - centre) / radius);
+	record.normal = normalize((record.p - sphere.centre) / sphere.radius);
 	
 	return true;
 }
 
-vec3 rayColour (Ray r) {
-	Hit rec = Hit( vec3(0.0,0.0,0.0), vec3(0.0,0.0,0.0), 0.0, false);
-	if ( hitSphere(vec3(0.0,0.0,-1.0), 0.5, r, rec, 0.01, 100.0) == true) {
-		return 0.5*vec3(rec.normal + 1.0);
+bool hitWorld (Sphere scene[WorldLength], Ray r, out Hit record) {
+    bool hitSomething = false;
+    float closest = 100.0;
+    
+    for (int i; i <= WorldLength; i++) {
+      if ( hitSphere(World[i], r, record, 0.01, 100.0) == true) {
+            hitSomething = true;
+            closest = record.t;
+        }
+    }
+    return hitSomething;
+}
+
+vec3 rayColour (Ray r, Sphere scene[WorldLength]) {
+  Hit record = Hit( vec3(0.0,0.0,0.0), vec3(0.0,0.0,0.0), 0.0, false);
+	if ( hitWorld(scene, r, record) == true) {
+		return 0.5*vec3(record.normal + 1.0);
 	}
 	vec3 unitDirection = normalize(r.direction);
 	float t = 0.5 * (unitDirection.y + 1.0);
@@ -86,7 +110,7 @@ void main() {
 	
 	vec3 rayDir = normalize(pixelTarget - origin);
 	Ray ray = Ray(origin, rayDir);
-	outColour = vec4(rayColour(ray), 1.0);
+	outColour = vec4(rayColour(ray, World), 1.0);
 }
 </script>
 
@@ -135,6 +159,7 @@ function resizeCanvasToDisplaySize(canvas) {
     // Make the canvas the same size
     canvas.width  = displayWidth;
     canvas.height = displayHeight;
+    
   }
  
   return needResize;
@@ -161,8 +186,8 @@ function main() {
   `;
   // compile GSGL shaders
   var vertexShader = createShader(gl, gl.VERTEX_SHADER, vs);
-	var fsScript = document.getElementById("fs");
-	var fs = fsScript.text;
+  var fsScript = document.getElementById("fs");
+  var fs = fsScript.text;
   var fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fs);
   // link the two shaders into a program
   var program = createProgram(gl, vertexShader, fragmentShader);
