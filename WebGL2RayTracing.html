@@ -25,6 +25,18 @@ uniform float iTime;
 // output for the fragment shader
 out vec4 outColour;
 
+// random number generator
+// [0,1] (found this function online)
+float nrand( vec2 n )
+{
+	return fract(sin(dot(n.xy, vec2(12.9898, 78.233)))* 43758.5453);
+}
+// [0,1] to [a,b]
+float remap( float a, float b, float v )
+{
+	return clamp( (v-a) / (b-a), 0.0, 1.0 );
+}
+
 struct Ray {
 	vec3 origin;
 	vec3 direction;
@@ -42,15 +54,40 @@ struct Sphere {
     float radius;
 };
 
-const int WorldLength = 2; // how many objects in the scene
-const Sphere World[WorldLength] = Sphere[WorldLength]( 
-    Sphere( vec3(0.0,0.0,-1.0), 0.5),
-    Sphere( vec3(-1.0,-20.0,-3.0), 19.5)
+struct Camera {
+   vec3 location;
+   float focalDistance;
+};
+    
+Camera cam = Camera( 
+    vec3(0.0, 0.0, 1.0),
+    -1.0
 );
+    
+Ray GetRay (Camera camera){
+    vec3 pixelTarget = vec3(
+        (gl_FragCoord.xy/iResolution.xy) * 2.0 - 1.0,
+        camera.focalDistance
+    );
+    pixelTarget += camera.location;
+    float aspectRatio = iResolution.x / iResolution.y;
+	pixelTarget.x *= aspectRatio;
+	//pixelTarget.y /= aspectRatio;
+	vec3 rayDir = normalize(pixelTarget - camera.location);
+	return Ray(camera.location, rayDir);
+}
     
 vec3 at (in Ray r, float t) { // location of ray at t value
 	return vec3(r.origin + r.direction * t);
 }
+
+const float SamplesPerPixel =  100.0;
+    
+const int WorldLength = 2; // how many objects in the scene
+Sphere World[WorldLength] = Sphere[WorldLength]( 
+    Sphere( vec3(0.0,   0.5, -1.0),  0.5),
+    Sphere( vec3(0.0, -100.5, -1.0), 100.0)
+);
     
 bool hitSphere (Sphere sphere, Ray r, inout Hit record, float t_min, float t_max) {
 	vec3 oc = r.origin - sphere.centre;
@@ -78,13 +115,15 @@ bool hitSphere (Sphere sphere, Ray r, inout Hit record, float t_min, float t_max
 }
 
 bool hitWorld (Sphere scene[WorldLength], Ray r, out Hit record) {
+		Hit temp_hit = Hit( vec3(0.0,0.0,0.0), vec3(0.0,0.0,0.0), 0.0, false);
     bool hitSomething = false;
     float closest = 100.0;
     
-    for (int i; i <= WorldLength; i++) {
-      if ( hitSphere(World[i], r, record, 0.01, 100.0) == true) {
+    for (int i = 0; i <= WorldLength; i++) {
+      if ( hitSphere(World[i], r, temp_hit, 0.01, 100.0) == true && temp_hit.t < closest) {
             hitSomething = true;
-            closest = record.t;
+            closest = temp_hit.t;
+            record = temp_hit;
         }
     }
     return hitSomething;
@@ -99,19 +138,20 @@ vec3 rayColour (Ray r, Sphere scene[WorldLength]) {
 	float t = 0.5 * (unitDirection.y + 1.0);
 	return vec3( (1.0-t)*vec3(1,1,1) + t*vec3(0.5,0.7,1.0) );
 }
-
+    
 void main() {
-	float screenDist = -1.0; 
-	vec3 origin = vec3(0,0,0); // start of ray
-	vec3 pixelTarget = vec3((gl_FragCoord.xy/iResolution.xy) * 2.0 - 1.0, screenDist);
-	
-	float aspectRatio = iResolution.x / iResolution.y;
-	pixelTarget.y /= aspectRatio;
-	
-	vec3 rayDir = normalize(pixelTarget - origin);
-	Ray ray = Ray(origin, rayDir);
-	outColour = vec4(rayColour(ray, World), 1.0);
+    World[0].centre.x += sin(iTime)/2.0;
+    World[0].centre.y += cos(iTime)/2.0;
+    //cam.location.z = tan(iTime);
+    Ray ray = GetRay(cam);
+    float scale = 1.0 / SamplesPerPixel;
+    for (float i; i < SamplesPerPixel; i ++)
+	outColour += vec4(
+        rayColour(ray, World) * scale,
+        1.0 // opacity
+    );
 }
+/////////////////////////////////////////////////////////////////////////////
 </script>
 
 <script>
