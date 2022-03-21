@@ -34,10 +34,10 @@ vec2 hash(float p) {
 }
 
 vec3 hash3(float p) {
-  return normalize(vec3(
-    hash(iTime*gl_FragCoord.x*gl_FragCoord.y) - 0.5,
-    hash(iTime*gl_FragCoord.x*gl_FragCoord.y).x) - 0.5
-  );
+  return normalize(
+	vec3(
+    hash(p) - vec2(0.5, 0.5),
+    hash(p + 201843.321).x - 0.5));
 }
     
 struct Ray {
@@ -68,13 +68,13 @@ Camera cam = Camera(
 );
     
 Ray GetRay (Camera camera, vec2 randomUV){
-    vec3 pixelTarget = vec3(
-      ((gl_FragCoord.xy/iResolution.xy) + randomUV) * 2.0 - 1.0,
-      camera.focalDistance
-    );
-    pixelTarget += camera.location;
+  vec3 pixelTarget = vec3(
+    ((gl_FragCoord.xy/iResolution.xy) + randomUV) * 2.0 - 1.0,
+    camera.focalDistance
+  );
+  pixelTarget += camera.location;
     
-    float aspectRatio = iResolution.x / iResolution.y;
+  float aspectRatio = iResolution.x / iResolution.y;
 	pixelTarget.x *= aspectRatio;
 	//pixelTarget.y /= aspectRatio;
     
@@ -144,12 +144,17 @@ vec3 rayColour (Ray r, Sphere scene[WorldLength]) {
 
   while ( hitWorld(scene, r, record) == true && bounces < BounceLimit) {
   	bounces++;
-
-		r.direction = normalize(hash3(bounces)/1.3 + record.normal + record.p);
+		
+		//r.direction = normalize(
+		//	reflect(r.direction, record.normal) + record.p
+		//	+ hash3(gl_FragCoord.x * gl_FragCoord.y * iTime * bounces) / 20.0
+		//	);
+		r.direction = reflect(r.direction, record.normal) + record.p;
+		//r.direction = normalize(cross((hash3(bounces)/1.3), record.normal) + record.p);
 
     unitDirection = r.direction;
 	  t = 0.5 * (unitDirection.y + 1.0);
-	  colour += (0.5*bounces) * vec3( (1.0-t)*vec3(1,1,1) + t*vec3(0.5,0.7,1.0) ); 
+	  colour += vec3( (1.0-t)*vec3(1,1,1) + t*vec3(0.5,0.7,1.0) ) / bounces; 
 	}
   if ( bounces > 0.0 ) {
     //return 0.5*vec3(record.normal + 1.0);
@@ -161,23 +166,23 @@ vec3 rayColour (Ray r, Sphere scene[WorldLength]) {
 }
     
 void main() {
-    World[0].centre.x += sin(iTime)/2.0;
-    World[0].centre.y += cos(iTime)/2.0;
-    //cam.location.z = sin(iTime);
-    vec2 rUV = vec2(0.0, 0.0);
-    for (float i; i < SamplesPerPixel; i++) {
-      rUV = hash( iTime*gl_FragCoord.x*gl_FragCoord.y * hash(i).x );
-      rUV -= 0.5;
-      rUV /= 800.0;
-      Ray ray = GetRay(cam, rUV);
-	   	outColour += vec4(rayColour(ray, World), 1.0);
-    }
-    outColour /= SamplesPerPixel;
-    //outColour = vec4(
-    //    sqrt(outColour.x),
-    //    sqrt(outColour.y),
-    //    sqrt(outColour.z), 1.0);
-    //outColour = vec4(rUV, 0.0, 1.0);
+	World[0].centre.x += sin(iTime)/2.0;
+  World[0].centre.y += cos(iTime)/2.0;
+  //cam.location.z = sin(iTime);
+  vec2 rUV = vec2(0.0, 0.0);
+  for (float i; i < SamplesPerPixel; i++) {
+    rUV = hash( iTime*gl_FragCoord.x*gl_FragCoord.y * hash(i).x );
+    rUV -= 0.5;
+		rUV /= 800.0;
+    Ray ray = GetRay(cam, rUV);
+	  outColour += vec4(rayColour(ray, World), 1.0);
+  }
+  outColour /= SamplesPerPixel;
+  //outColour = vec4(
+  //    sqrt(outColour.x),
+  //    sqrt(outColour.y),
+  //    sqrt(outColour.z), 1.0);
+  //outColour = vec4(rUV, 0.0, 1.0);
 }
 /////////////////////////////////////////////////////////////////////////////
 </script>
