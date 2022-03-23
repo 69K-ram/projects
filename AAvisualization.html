@@ -200,8 +200,7 @@ void main() {
 	
 	vec3 verticalDif = AAcheck[0] - AAcheck[2];
 	vec3 horizontalDif = AAcheck[3] - AAcheck[1];
-	vec3 colourDif = verticalDif - horizontalDif;
-	//colourDif.z = colourDif.x - colourDif.y;
+	vec3 colourDif = verticalDif + horizontalDif;
 	outColour = vec4(colourDif, 1.0);
 	/*
   for (float i; i < SamplesPerPixel; i++) {
