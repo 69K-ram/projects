@@ -105,8 +105,10 @@ vec3 at (in Ray r, float t) { // location of ray at t value
   return vec3(r.origin + r.direction * t);
 }
 
+const float AAthreshold = 0.15;
 const float SamplesPerPixel = 50.0;
 const float BounceLimit = 10.0;
+
 const int WorldLength = 2; // how many objects in the scene
 Sphere World[WorldLength] = Sphere[WorldLength]( 
     Sphere( vec3(0.0,    0.0, -1.0),  0.5),
@@ -181,37 +183,48 @@ vec3 rayColour (Ray r, Sphere scene[WorldLength]) {
 }
     
 void main() {
-	//World[0].centre.x += sin(iTime)/2.0;
-  //World[0].centre.y += cos(iTime)/2.0;
+	World[0].centre.x += sin(iTime)/2.0;
+  World[0].centre.y += cos(iTime)/2.0;
  // cam.location.z = sin(iTime);
  
   vec3 AAcheck[4];
-	Ray ray = GetRay(cam, vec2(0.0, 1.0));
-	AAcheck[0] = rayColour(ray, World); // up
+	float AAdist = 1.0;
+	Ray ray = GetRay(cam, vec2(0.0, AAdist));
+	AAcheck[0] = rayColour(ray, World); // up colour
 	
-	ray = GetRay(cam, vec2(1.0, 0.0));
-	AAcheck[1] = rayColour(ray, World); // right
+	ray = GetRay(cam, vec2(AAdist, 0.0));
+	AAcheck[1] = rayColour(ray, World); // right colour
 	
-	ray = GetRay(cam, vec2(0.0, -1.0));
-	AAcheck[2] = rayColour(ray, World); // down
+	ray = GetRay(cam, vec2(0.0, -AAdist));
+	AAcheck[2] = rayColour(ray, World); // down colour
 	
-	ray = GetRay(cam, vec2(-1.0, 0.0));
-  AAcheck[3] = rayColour(ray, World); // left
+	ray = GetRay(cam, vec2(-AAdist, 0.0));
+  AAcheck[3] = rayColour(ray, World); // left colour
 	
-	vec3 verticalDif = AAcheck[0] - AAcheck[2];
-	vec3 horizontalDif = AAcheck[3] - AAcheck[1];
-	vec3 colourDif = verticalDif + horizontalDif;
-	outColour = vec4(colourDif, 1.0);
-	/*
-  for (float i; i < SamplesPerPixel; i++) {
+	vec3 verticalDif = AAcheck[0] - AAcheck[2]; // the differnce between the colour a bit up and a bit down
+	vec3 horizontalDif = AAcheck[3] - AAcheck[1]; // the difference between the colour a bit left and a bit right
+	vec3 colourDif = abs(verticalDif) + abs(horizontalDif); // add both colour differences
+	float totalDif = colourDif.r + colourDif.g + colourDif.b;
+	//outColour = vec4(colourDif, 1.0);
 	
-		vec2 rayShift = vec2(trand(gl_FragCoord.xy, 0.123 * i), trand(gl_FragCoord.xy, 0.456 * i)); // random vector from -1,1
-    ray = GetRay(cam, rayShift);
-    outColour += vec4(rayColour(ray, World), 1.0);
-  }
+	// if the difference in colours is greater than a threshold, then multisample the pixel for AA
+	if(totalDif > AAthreshold) {
+		
+		outColour = vec4(0.0, 0.0, 0.0, 0.0);
+  	for (float i; i < SamplesPerPixel; i++) {
 	
-  outColour /= SamplesPerPixel;
-	*/
+			vec2 rayShift = vec2(trand(gl_FragCoord.xy, 0.123 * i), trand(gl_FragCoord.xy, 0.456 * i)); // random vector from -1,1
+    	ray = GetRay(cam, rayShift);
+    	outColour += vec4(rayColour(ray, World), 1.0);
+  	}
+		outColour /= SamplesPerPixel;
+	} 
+	
+	else {
+		ray = GetRay(cam, vec2(0.0, 0.0) );
+    outColour = vec4(rayColour(ray, World), 1.0);
+	}
+	
   outColour = vec4(
       sqrt(outColour.x),
       sqrt(outColour.y),
