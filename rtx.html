@@ -40,8 +40,7 @@ float trand(vec2 n, float seed)
     return nrand(n * seed * iTime) * 2.0 - 1.0;
 }
 
-vec3 randomInSphere(vec2 uv, float seed)
-{
+vec3 randomInSphere(vec2 uv, float seed){
     // this is doing rejection sampling, which is simple but not super efficient
     vec3 p;
     do {
@@ -84,17 +83,17 @@ Camera cam = Camera(
     vec3(0.0, 0.0, 1.0),
     -1.0
 );
-    
-Ray GetRay (Camera camera, float seed) {
+
+// calculates the ray from the camera position and the offset (for anti aliasing)
+Ray GetRay (Camera camera, vec2 shift) {
 	vec3 pixelTargetUV = vec3(
     (gl_FragCoord.xy/iResolution.xy) * 2.0 - 1.0,
     camera.focalDistance
-  );
-
-	vec2 rUV = vec2(trand(pixelTargetUV.xy, 0.123 * seed), trand(pixelTargetUV.xy, 0.456 * seed)); // random vector from -1,1
-	rUV /= iResolution.xy;
-	rUV *= 2.0;
-	pixelTargetUV.xy += rUV;
+  ); // x,y direction from [-1,1]
+	
+	shift /= iResolution.xy;
+	shift *= 2.0 - 1.0;
+	pixelTargetUV.xy += shift;
   pixelTargetUV += camera.location;
   float aspectRatio = iResolution.x / iResolution.y;
   pixelTargetUV.x *= aspectRatio;
@@ -102,18 +101,22 @@ Ray GetRay (Camera camera, float seed) {
   return Ray(camera.location, rayDir);
 }
     
-vec3 at (in Ray r, float t) { // location of ray at t value
+vec3 at (in Ray r, float t) { // location of ray at t value 
   return vec3(r.origin + r.direction * t);
 }
 
+//////////////////////////////////////////////////////////////////////////
+const float AAthreshold = 200.0; // 0.3 is good
 const float SamplesPerPixel = 50.0;
-const float BounceLimit = 10.0;
+const float BounceLimit = 20.0;
+
 const int WorldLength = 2; // how many objects in the scene
 Sphere World[WorldLength] = Sphere[WorldLength]( 
     Sphere( vec3(0.0,    0.0, -1.0),  0.5),
     Sphere( vec3(0.0, -100.5, -1.0), 100.0)
 );
-    
+//////////////////////////////////////////////////////////////////////////
+ 
 bool hitSphere (Sphere sphere, Ray r, inout Hit record, float t_min, float t_max) {
 	vec3 oc = r.origin - sphere.centre;
 	
@@ -154,50 +157,88 @@ bool hitWorld (Sphere scene[WorldLength], Ray r, out Hit record) {
     return hitSomething;
 }
 
+vec3 skyColour (vec3 direction) {
+	float t = 0.5 * (normalize(direction).y + 1.0);
+	return vec3( (1.0-t)*vec3(1,1,1) + t*vec3(0.5,0.7,1.0) );
+}
+
 vec3 rayColour (Ray r, Sphere scene[WorldLength]) {
   Hit record = Hit( vec3(0.0,0.0,0.0), vec3(0.0,0.0,0.0), 0.0, false);
     
   vec3 unitDirection;
   float t;
   float bounces = 0.0;
-  vec3 colour = vec3(0.0, 0.0, 0.0);
+  vec3 colour = vec3(1.0, 1.0, 1.0);
 	
   while ( hitWorld(scene, r, record) == true && bounces < BounceLimit) {
   	bounces++;
 		
-		
 		r.direction = record.normal + record.p + randomInSphere(gl_FragCoord.xy, bounces * 1.456);
 		//r.direction = reflect(r.direction, record.normal) + record.p;
-		//r.direction = normalize(cross((hash3(bounces)/1.3), record.normal) + record.p);
-		
-    unitDirection = r.direction;
-	  t = 0.5 * (unitDirection.y + 1.0);
-	  colour += vec3( (1.0-t)*vec3(1,1,1) + t*vec3(0.5,0.7,1.0) ) * (bounces * 0.5); 
+		colour *= vec3(0.18, 0.18, 0.18);
 	}
   if ( bounces > 0.0 ) {
-    return 0.5*vec3(unitDirection + 1.0) / bounces;
+  	colour *= skyColour(r.direction);
+    //return 0.5*vec3(unitDirection + 1.0) / bounces;
     return colour / bounces;
   }
-	unitDirection = normalize(r.direction);
-	t = 0.5 * (unitDirection.y + 1.0);
-	return vec3( (1.0-t)*vec3(1,1,1) + t*vec3(0.5,0.7,1.0) );
+  return skyColour(r.direction);
 }
     
 void main() {
 	//World[0].centre.x += sin(iTime)/2.0;
   //World[0].centre.y += cos(iTime)/2.0;
   //cam.location.z = sin(iTime);
-  vec2 rUV = vec2(0.0, 0.0);
-  for (float i; i < SamplesPerPixel; i++) {
-    Ray ray = GetRay(cam, i);
-    outColour += vec4(rayColour(ray, World), 1.0);
-  }
-  outColour /= SamplesPerPixel;
-  //outColour = vec4(
-  //    sqrt(outColour.x),
-  //    sqrt(outColour.y),
-  //    sqrt(outColour.z), 1.0);
-  //outColour = vec4(rUV, 0.0, 1.0);
+ 	
+  vec3 AAcheck[4];
+	float AAdist = 1.0;
+	Ray ray = GetRay(cam, vec2(0.0, AAdist));
+	AAcheck[0] = rayColour(ray, World); // up colour
+	
+	ray = GetRay(cam, vec2(AAdist, 0.0));
+	AAcheck[1] = rayColour(ray, World); // right colour
+	
+	ray = GetRay(cam, vec2(0.0, -AAdist));
+	AAcheck[2] = rayColour(ray, World); // down colour
+	
+	ray = GetRay(cam, vec2(-AAdist, 0.0));
+  AAcheck[3] = rayColour(ray, World); // left colour
+	
+	vec3 verticalDif = (AAcheck[0] - AAcheck[2]) - (AAcheck[2] - AAcheck[0]); // the differnce between the colour a bit up and a bit down
+	vec3 horizontalDif = (AAcheck[3] - AAcheck[1]) - (AAcheck[1] - AAcheck[3]); // the difference between the colour a bit left and a bit right
+	vec3 colourDif = abs(verticalDif) + abs(horizontalDif); // add both colour differences
+	float totalDif = colourDif.r + colourDif.g + colourDif.b;
+	//if (totalDif >= 0.3) {
+	//	outColour = vec4(1.0, 1.0, 1.0, 1.0);
+	//}
+	//else {
+	//	outColour = vec4(0.3, 0.3, 0.3, 1.0);
+	//}
+	
+	// if the difference in colours is greater than a threshold, then multisample the pixel for AA
+	if(totalDif > AAthreshold) {
+		
+		outColour = vec4(0.0, 0.0, 0.0, 0.0);
+  	for (float i; i < SamplesPerPixel; i++) {
+	
+			vec2 rayShift = vec2(
+				trand(gl_FragCoord.xy, 0.123 * i),
+				trand(gl_FragCoord.xy, 0.456 * i)); // random vector from -1,1
+    	ray = GetRay(cam, rayShift);
+
+    	outColour += vec4(rayColour(ray, World), 1.0);
+  	}
+		outColour /= SamplesPerPixel;
+	} 
+	else {
+		ray = GetRay(cam, vec2(0.0, 0.0) );
+    outColour = vec4(rayColour(ray, World), 1.0);
+	}
+
+  outColour = vec4(
+    sqrt(outColour.x),
+    sqrt(outColour.y),
+    sqrt(outColour.z), 1.0);
 }
 /////////////////////////////////////////////////////////////////////////////
 </script>
