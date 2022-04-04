@@ -17,15 +17,24 @@
 	</div>
 </html>
 
-<script id="fs">#version 300 es
-precision highp float;
-uniform vec2 iResolution;
-uniform vec2 iMouse;
-uniform float iTime;
-// output for the fragment shader
-out vec4 outColour;
+<script id="fs">#version 300 es // specifies the newest version of WebGL
+precision highp float; // sets floats to high precision
 
-// commonly used randomizer function from shadertoy
+// this script is written in GLSL, which is the shader language for WebGL. this shader calculates the colour of each pixel. 
+// it's input is the variable GL_FragCoord, which is the (X,Y) of the current pixel. 
+// it also uses the 'uniform' variables below but those are defined by me, not WebGL. 
+// this shader is executed for each pixel on screen, and runs parallel on each graphics core. 
+// these school computers have 24 cores on the CPU's graphics processor so it runs far faster than JavaScript, which runs on just a single core. 
+// modern gaming graphics cards have core count's in the thousands, and WebGl will use all of them in parallel.
+
+uniform vec2 iResolution; // passed in from JavaScript, holds the resolution of the canvas it's displaying on
+uniform vec2 iMouse; // passed in from JavaScript, holds the mouse location (x,y)
+uniform float iTime; // passed in from JavaScript, records how many milliseconds the code has been running for
+
+// output for the fragment shader
+out vec4 outColour; //(r,g,b), opacity
+
+// randomizer function (found online)
 float nrand(vec2 p)
 {
 	vec3 p3  = fract(vec3(p.xyx) * .1031);
@@ -52,38 +61,38 @@ vec3 randomInSphere(vec2 uv, float seed){
     return p;
 }
     
-struct Ray {
-	vec3 origin;
-	vec3 direction;
+struct Ray { // variable structure for the ray
+	vec3 origin; // origin is the 3d location it started at
+	vec3 direction; // 3d vector of where it's directed
 };
 
-struct Hit {
-	vec3 p;
-	vec3 normal;
-	float t;
-	bool inside; // if the ray hit the outside or inside
+struct Hit { // variable structure to store information when the ray hits something
+	vec3 p; // the 3d position of where the ray intersected with something
+	vec3 normal; // surface normal where ray hit. directly away from the object. needed for calculating reflections
+	float t; // how far along the rays path the intersect occured
+	bool inside; // if the ray hit the outside or inside of an object
 	int object; // array id of object hit
 };
 
-struct Material {
-	vec3 colour;
-	float shiny;
+struct Material { // material structure for objects
+	vec3 colour; // r,g,b colour of the material
+	float shiny; // how reflective it is
 };
 
-struct Sphere { 
-    vec3 centre;
-    float radius;
-		Material mat;
+struct Sphere { // sphere object
+    vec3 centre; // 3d position of where the centre of the sphere is
+    float radius; // radius of sphere
+		Material mat; // the material of the sphere
 };
 
-struct Camera {
-   vec3 location;
-   float focalDistance;
+struct Camera { // camera structure
+   vec3 location; // 3d location of where the camera is
+   float focalDistance; // how wide the fov of the camera is
 };
     
 Camera cam = Camera( 
-    vec3(0.0, 0.0, 2.0),
-    -1.0
+    vec3(0.0, 0.0, 2.0), // location of camera
+    -1.0 // needs to be negative or the camera will be facing the opposite way expected
 );
 
 const Material blue = Material( vec3(0.0, 0.0, 0.9), 1.0);
@@ -93,7 +102,7 @@ const Material yellow  = Material( vec3(0.5, 0.5, 0.0), 0.7);
 const Material white = Material( vec3(0.9, 0.9, 0.9), 0.0);
 
 // calculates the ray from the camera position and the offset (for anti aliasing)
-Ray GetRay (Camera camera, vec2 shift) {
+Ray GetRay (Camera camera, vec2 shift) { 
 	vec3 pixelTargetUV = vec3(
     (gl_FragCoord.xy/iResolution.xy) * 2.0 - 1.0,
     camera.focalDistance
@@ -174,24 +183,26 @@ bool hitWorld (Sphere scene[WorldLength], Ray r, out Hit record) {
 }
 
 float lighting(Ray r, vec3 normal) {
-	Hit shadowHit = Hit( vec3(0.0,0.0,0.0), vec3(0.0,0.0,0.0), 0.0, false, 0);
-	bool shadowed = true;
-	float light = 0.3; // inital ambient amount
+	// calculates light from 0-1 at a location given the direction of the ray
+	Hit shadowHit = Hit( vec3(0.0,0.0,0.0), vec3(0.0,0.0,0.0), 0.0, false, 0); 
+
+	float light = 0.3; // initial ambient amount. So nothing is fully in the dark
 	vec3 reflected = normalize(reflect(r.direction, normal));
   for (int i = 0; i <= LightLength - 1; i++) {
     //Ray lightRay = Ray(r.origin, normalize( (Lights[i].centre + (randomInSphere(gl_FragCoord.xy, 1.234) * Lights[i].radius) - r.origin) ));
-		Ray lightRay = Ray(r.origin, normalize(Lights[i].centre  - r.origin) );
+		Ray lightRay = Ray(r.origin, normalize(Lights[i].centre  - r.origin) ); 
+		
     if (hitWorld(World, lightRay, shadowHit) == true) {
     } else {
-    	light += max( dot(lightRay.direction, normalize(normal)), 0.0);
-			light += abs(dot(reflected, normalize(normal)))/0.8;
-    	shadowed = false;
+    	light += max( dot(lightRay.direction, normalize(normal)), 0.0); // dot product of the direction to the light and the surface normal gives how much light that spot is recieving. the higher the angle between the normal and the light, the darker it is. maxes with 0 because dot product can return negative values, and nothing can be negatively bright
+			light += max( dot(reflected, normalize(r.direction)), 0.0); // dot product between the ray that bounces off the object and the ray from the camera to the object. this gives the bright highlights on objects. maxes with 0 to prevent negative values
     }
   }
   return light;
 }
 
-vec3 skyColour (vec3 direction) {
+vec3 skyColour (vec3 direction) { // calculates a colour from a blueish gradient depending on the vertical component of the rays direction 
+	// used for the sky when the ray doesn't hit anything
 	float t = 0.5 * (normalize(direction).y + 1.0);
 	return vec3( (1.0-t)*vec3(1,1,1) + t*vec3(0.5,0.7,1.0) );
 }
@@ -201,20 +212,28 @@ vec3 rayColour (Ray r, Sphere scene[WorldLength]) {
     
   vec3 unitDirection;
   float t;
-  float bounces = 0.0;
-  vec3 colour = vec3(0.0, 0.0, 0.0);
-	float shiny = 0.99;
+	
+  float bounces = 0.0; // how many times the ray has bounced
+	
+  vec3 colour = vec3(0.0, 0.0, 0.0); // colour from the ray
+	
+	float absorbed = 0.0; // how much of the rays light has been absorbed
 
   while ( hitWorld(scene, r, record) == true && bounces < BounceLimit) {
   	bounces++;
 		
+		// bounces the ray
 		vec3 bounceTarget = reflect(r.direction , record.normal) + record.p;
 		//vec3 bounceTarget = record.normal + record.p + randomInSphere(gl_FragCoord.xy, bounces)/2.0;
-		r.origin = record.p;
+		r.origin = record.p; // the new origin of the ray is where it hit another object
 		r.direction = bounceTarget - r.origin;
 		
-		colour += World[record.object].mat.colour * lighting(r, record.normal) * (World[record.object].mat.shiny * bounces);
-		//shiny *= World[record.object].mat.shiny;
+		
+		colour += (colour * lighting(r, record.normal) * (1.0 - absorbed)) + (World[record.object].mat.colour * absorbed * lighting(r, record.normal)); 
+		colour *= 
+		
+		absorbed -= (1.0 - World[record.object].mat.shiny);
+		
 	}
 	if (bounces > 0.0) {
 		return (colour / bounces) + (World[record.object].mat.shiny * skyColour(r.direction)) * World[record.object].mat.shiny;
