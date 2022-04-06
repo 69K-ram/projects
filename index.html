@@ -95,10 +95,13 @@ Camera cam = Camera(
     -1.0 // needs to be negative or the camera will be facing the opposite way expected
 );
 
-const Material blue = Material( vec3(0.0, 0.0, 0.9), 1.0);
+const Material blue = Material( vec3(0.0, 0.0, 0.9), 0.99);
+
 const Material red  = Material( vec3(0.9, 0.0, 0.0), 0.2);
-const Material green  = Material( vec3(0.0, 0.7, 0.2), 0.1);
-const Material yellow  = Material( vec3(0.5, 0.5, 0.0), 0.7);
+
+const Material green  = Material( vec3(0.0, 0.7, 0.2), 0.09);
+
+const Material yellow  = Material( vec3(0.5, 0.5, 0.0), 0.5);
 const Material white = Material( vec3(0.9, 0.9, 0.9), 0.0);
 
 // calculates the ray from the camera position and the offset (for anti aliasing)
@@ -217,9 +220,9 @@ vec3 rayColour (Ray r, Sphere scene[WorldLength]) {
 	
   vec3 colour = vec3(0.0, 0.0, 0.0); // colour from the ray
 	
-	float absorbed = 0.0; // how much of the rays light has been absorbed
+	float energy = 1.0; // how much of the rays lighs hasn't been absorbed
 
-  while ( hitWorld(scene, r, record) == true && bounces < BounceLimit) {
+  while ( hitWorld(scene, r, record) == true && bounces < BounceLimit && energy >= 0.0) {
   	bounces++;
 		
 		// bounces the ray
@@ -228,21 +231,18 @@ vec3 rayColour (Ray r, Sphere scene[WorldLength]) {
 		r.origin = record.p; // the new origin of the ray is where it hit another object
 		r.direction = bounceTarget - r.origin;
 		
+		float light = lighting(r, r.direction);
 		
-		colour += (colour * lighting(r, record.normal) * (1.0 - absorbed)) + (World[record.object].mat.colour * absorbed * lighting(r, record.normal)); 
-		colour *= 
-		
-		absorbed -= (1.0 - World[record.object].mat.shiny);
+		colour += ((World[record.object].mat.colour * (1.0 - World[record.object].mat.shiny) * light) + (colour * World[record.object].mat.shiny) * light) * energy;
+		energy -= (1.0 - World[record.object].mat.shiny);
 		
 	}
 	if (bounces > 0.0) {
-		return (colour / bounces) + (World[record.object].mat.shiny * skyColour(r.direction)) * World[record.object].mat.shiny;
+		if (energy > 0.0) {
+			colour += skyColour(r.direction) * energy * World[record.object].mat.shiny;
+		}
+		return colour;
 	} 
-	//else if ( bounces > BounceLimit) {
-    //return 0.5*vec3(unitDirection + 1.0) / bounces;
-  //  return colour * skyColour(r.direction) / bounces;
-		//return vec3(0.0,0.0,0.0);
- // }
 	return skyColour(r.direction);
 }
     
