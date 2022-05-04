@@ -21,55 +21,113 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
+canvas.addEventListener('mousedown', function(e) { 
+	getCursorPosition(canvas, e) });
+
 resizeCanvasToDisplaySize(canvas);
 
 ctx.fillStyle = 'lightblue'; // paint canvas black
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-cellsWidth = Math.floor(canvas.width / 50);
-cellsTall  = Math.floor(canvas.height / 50);
+cellSize = 25;
+cellsWidth = Math.round(canvas.width / cellSize) + 2;
+cellsTall  = Math.round(canvas.height / cellSize) + 2;
 
-let cells = new Array(cellsWidth); // create cell array
+var cells = new Array(cellsWidth); // create cell array
 for (let i = 0; i < cellsWidth; i++) {
   cells[i] = new Array(cellsTall);
 }
 
-for (let y = 0; y < cellsTall; y++) { // initalize cell array
-	for (let x = 0; x < cellsWidth; x++) {
-		cells[x][y] = Math.round(Math.random());
-	};
-};
+let generations = 0;
+clearCells(1);
+
+let paused = false;
 
 newGeneration();
 
-function newGeneration() {
+function clearCells(random) {
 	for (let y = 0; y < cellsTall; y++) { // initalize cell array
 		for (let x = 0; x < cellsWidth; x++) {
-			cells[x][y] = 0
+			cells[x][y] = Math.max(Math.round(Math.random() - random), 0);
+		}
+	}
+}
+
+function newGeneration() {
+	generations ++;
+	//console.log(generations);
+	let changedCells = cells;
+	for (let y = 1; y < cellsTall - 1; y++) { // initalize cell array
+		for (let x = 1; x < cellsWidth - 1; x++) {
+			let neighbours = 0;
+			// starts top left, checks clockwise
+			neighbours += cells[x - 1][y - 1];
+			neighbours += cells[x]		[y - 1];
+			neighbours += cells[x + 1][y - 1];
+			neighbours += cells[x + 1][y];
+			neighbours += cells[x + 1][y + 1];
+			neighbours += cells[x]    [y + 1];
+			neighbours += cells[x - 1][y + 1];
+			neighbours += cells[x - 1][y];
+
+			if (cells[x][y] == 1) { // live cell
+				if (neighbours <= 1 || neighbours > 3) {
+					changedCells[x][y] = 0;
+				}
+			} else { // dead cell
+				if (neighbours == 3) {
+					changedCells[x][y] = 1; // cell revives
+				};
+			};
+
 		};
+	
 	};
+	cells = changedCells;
 	displayCells();
-	setTimeout(newGeneration, 1000);
-};
+
+	if (paused == false) { 
+		let callID = setTimeout(newGeneration, 1000);
+	} else {
+		clearTimeout(callID);
+	}
+}
 
 function displayCells() {
-	for (let y = 0; y < cellsTall; y++) { // initalize cell array
-		for (let x = 0; x < cellsWidth; x++) {
-		
+	for (let y = 1; y < cellsTall - 1; y++) { // initalize cell array
+		for (let x = 1; x < cellsWidth - 1; x++) {
+			
+			// assume cell is empty, draw empty
 			ctx.fillStyle = 'black';
-			ctx.fillRect(x * 50, y * 50, 10, 10);
+			ctx.fillRect((x - 1) * cellSize, (y - 1) * cellSize, cellSize, cellSize);
 			
+			// if cell is alive, draw black
 			if (cells[x][y] == 1 ){
-			console.log("alive");
 				ctx.fillStyle = 'white';
-				ctx.fillRect(x * 50, y * 50, 10, 10);
-				//console.log("alive");
-			};
+				ctx.fillRect((x - 1) * cellSize, (y - 1) * cellSize, cellSize, cellSize);
+			}
 			
-		};
-	};
+		}
+	}
 	
-};
+	ctx.font = "30px Comic Sans MS";
+
+	ctx.fillStyle = "blue";
+	ctx.fillText("Clear", 85, 30);
+
+	ctx.fillStyle = "purple";
+	ctx.fillText("Random", 165, 30);
+
+	if (paused == false){
+		ctx.fillStyle = "red";
+		ctx.fillText("Pause", 5, 30);
+	
+	} else {
+		ctx.fillStyle = "green";
+		ctx.fillText("Play", 5, 30);
+	}
+	
+}
 
 function resizeCanvasToDisplaySize(canvas) {
   // Lookup the size the browser is displaying the canvas in CSS pixels.
@@ -83,6 +141,27 @@ function resizeCanvasToDisplaySize(canvas) {
     canvas.height = displayHeight;
   }
 	return needResize;
+}
+
+function getCursorPosition(canvas, event) {
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    cellX = Math.round(x / cellSize) + 1;
+    cellY = Math.round(y / cellSize) + 1;
+
+    if (x < 70 && y < 50) {
+    	if (paused == true) {
+    		paused = !paused;
+    		newGeneration();
+    	} else { paused = !paused;}
+    	
+    }	else {
+    	cells[cellX][cellY] = 1 - cells[cellX][cellY];
+    }
+
+    displayCells();
+  	
 }
 
 </script>
