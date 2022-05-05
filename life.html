@@ -37,11 +37,14 @@ var cells = new Array(cellsWidth); // create cell array
 for (let i = 0; i < cellsWidth; i++) {
   cells[i] = new Array(cellsTall);
 }
-
+var updatedCells = [];
+for (var i = 0; i < cells.length; i++) {
+	updatedCells[i] = cells[i].slice();
+}
+    
 clearCells(1);
 
 let paused = false;
-var neighboursArray = cells;
 
 newGeneration();
 
@@ -54,43 +57,38 @@ function clearCells(random) {
 }
 
 function newGeneration() {
-      
-	let changedCells = cells;
+
 	for (let x = 1; x < (cellsWidth - 1); x++) { // initalize cell array
 		for (let y = 1; y < (cellsTall - 1); y++) {
-			let neighbours = 0;
-			// starts top left, checks clockwise
-			/*
-      neighbours += cells[x][y - 1];
-			neighbours += cells[x][y + 1];
-      
-			neighbours += cells[x - 1][y - 1];
-			neighbours += cells[x - 1][y];
-			neighbours += cells[x - 1][y + 1];
-      
-			neighbours += cells[x + 1][y - 1];
-			neighbours += cells[x + 1][y];
-			neighbours += cells[x + 1][y + 1];
-      */
-      
-			if (cells[x][y] == 1) { // live cell
-				if (neighbours == 2 || neighbours == 3) {
-        		changedCells[x][y] = 1;
-				} else {
-        		changedCells[x][y] = 0;
-        	}
-			} else { // dead cell
-				if (neighbours == 3) {
-					changedCells[x][y] = 1; // cell revives
-				} else {
-        	changedCells[x][y] = 0;
-        }
-			}
 
+			let neighbours = 0;
+      neighbours += cells[x][y-1];
+			neighbours += cells[x][y+1];
+      
+			neighbours += cells[x-1][y-1];
+			neighbours += cells[x-1][y];
+			neighbours += cells[x-1][y+1];
+      
+			neighbours += cells[x+1][y-1];
+			neighbours += cells[x+1][y];
+			neighbours += cells[x+1][y+1];
+
+			if (cells[x][y] == 1 && (neighbours==2 || neighbours==3) ) { 
+				updatedCells[x][y] = 1;
+			}
+			else if (cells[x][y] == 0 && neighbours==3) {
+				updatedCells[x][y] = 1;
+			}
+			else {
+				updatedCells[x][y] = 0;
+			}
 		}
-	
 	}
-	cells = changedCells;
+
+	cells = [];
+	for (var i = 0; i < updatedCells.length; i++) {
+		cells[i] = updatedCells[i].slice();
+	}
 	displayCells();
 
 	if (paused == false) { 
@@ -113,12 +111,8 @@ function displayCells() {
 				ctx.fillStyle = 'white';
 				ctx.fillRect((x - 1) * cellSize, (y - 1) * cellSize, cellSize, cellSize);
 			}
-      ctx.font = "10px Comic Sans MS";
-			ctx.fillStyle = "blue";
-			ctx.fillText(neighboursArray[x][y], (x - 1) * 25, (y - 1) * 25);
 		}
 	}
-	
 	ctx.font = "30px Comic Sans MS";
 
 	ctx.fillStyle = "blue";
@@ -171,7 +165,20 @@ function getCursorPosition(canvas, event) {
     	clearCells(0.4);
     } 
     else {
-    	cells[cellX][cellY] = 1 - cells[cellX][cellY];
+    	let neighbours = 0;
+    	neighbours += cells[cellX][cellY-1];
+			neighbours += cells[cellX][cellY+1];
+      
+			neighbours += cells[cellX-1][cellY-1];
+			neighbours += cells[cellX-1][cellY];
+			neighbours += cells[cellX-1][cellY+1];
+      
+			neighbours += cells[cellX+1][cellY-1];
+			neighbours += cells[cellX+1][cellY];
+			neighbours += cells[cellX+1][cellY+1];
+			
+			cells[cellX][cellY] = 1 - cells[cellX][cellY];
+
     }
 
     displayCells();
