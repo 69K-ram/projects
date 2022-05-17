@@ -6,16 +6,6 @@
       margin: 0;
     }
 
-    .box {
-      width: 100%;
-      height: 100%;
-      position: absolute;
-      top: 0;
-      left: 0;
-      opacity: 1;
-    }
-
-
     .canvas {
       width: 100%;
       height: 100%;
@@ -23,9 +13,7 @@
 
   </style>
   
-    <div class="box">
-      <canvas class="canvas" id="canvas"></canvas>
-    </div>
+  <canvas class="canvas" id="canvas"></canvas>
 
 </html>
 
@@ -37,51 +25,47 @@ var steering = 0; // -1, 0, 1
 
 
 document.addEventListener("keydown", function (event) {
-  if (event.defaultPrevented) {
-    return; // Should do nothing if the default action has been cancelled
-  }
+  if (event.defaultPrevented) {return;}
   var handled = false;
   if (event.key !== undefined) {
     handled = true;
-    if (event.key =='w' || event.key = 'W') { throttle = true; } 
-    if (event.key =='s' || event.key = 'S') { brakes = true; }
-    if (event.key =='a' || event.key = 'A') { steering = -1; }
-    if (event.key =='d' || event.key = 'D') { steering = 1; }
+    if (event.key == 'w' || event.key == 'W') { throttle = true; } 
+    if (event.key == 's' || event.key == 'S') { brakes   = true; }
+    if (event.key == 'a' || event.key == 'A') { steering = -1; }
+    if (event.key == 'd' || event.key == 'D') { steering =  1; }
   }
-  
-  if (handled) {
-    // Suppress "double action" if event handled
-    event.preventDefault();
-  }
+  if (handled) { event.preventDefault(); }
 }, true);
 
 document.addEventListener("keyup", function (event) {
-  if (event.defaultPrevented) {
-    return; // Should do nothing if the default action has been cancelled
-  }
+  if (event.defaultPrevented) { return; }
   var handled = false;
   if (event.key !== undefined) {
     handled = true;
-		if (event.key =='w' || event.key = 'W') { throttle = false; } 
-    if (event.key =='s' || event.key = 'S') { brakes = false; }
-    if (event.key =='a' || event.key = 'A') { steering = 0; }
-    if (event.key =='d' || event.key = 'D') { steering = 0; }
+    if (event.key == 'w' || event.key == 'W') { throttle = false; } 
+    if (event.key == 's' || event.key == 'S') { brakes   = false; }
+    if (event.key == 'a' || event.key == 'A') { steering = 0; }
+    if (event.key == 'd' || event.key == 'D') { steering = 0; }
   }
-  
-  if (handled) {
-    // Suppress "double action" if event handled
-    event.preventDefault();
-  }
+  if (handled) { event.preventDefault();}
 }, true);
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
+let treepng = new Image();
+treepng.src = "tree.png"
+
 resizeCanvasToDisplaySize(canvas);
 
-ctx.fillStyle = 'blue'; // initialize canvas
+ctx.fillStyle = 'gray'; // initialize canvas
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+treepng.onload = function() {
+    ctx.drawImage(treepng, 0, 0, 100, 150); 
+};
+
+/*
 ctx.fillStyle = 'red';
 ctx.beginPath();
 ctx.moveTo(120, 100);
@@ -90,6 +74,7 @@ ctx.lineTo(50, 150);
 ctx.lineTo(50, 100);
 ctx.closePath();
 ctx.fill();
+*/
 
 function resizeCanvasToDisplaySize(canvas) {
   // Lookup the size the browser is displaying the canvas in CSS pixels.
