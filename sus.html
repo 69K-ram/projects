@@ -20,12 +20,9 @@
 <script id="fs">#version 300 es // specifies the newest version of WebGL
 precision highp float; // sets floats to high precision
 
-// this script is written in GLSL, which is the shader language for WebGL. this shader calculates the colour of each pixel. 
-// it's input is the variable GL_FragCoord, which is the (X,Y) of the current pixel. 
-// it also uses the 'uniform' variables below but those are defined by me, not WebGL. 
-// this shader is executed for each pixel on screen, and runs parallel on each graphics core. 
-// these school computers have 24 cores on the CPU's graphics processor so it runs far faster than JavaScript, which runs on just a single core. 
-// modern gaming graphics cards have core count's in the thousands, and WebGl will use all of them in parallel.
+uniform vec4 iWorld[3];
+uniform vec3 iLights[2];
+uniform vec3 iMats[2];
 
 uniform vec2 iResolution; // passed in from JavaScript, holds the resolution of the canvas it's displaying on
 uniform vec2 iMouse; // passed in from JavaScript, holds the mouse location (x,y)
@@ -131,42 +128,20 @@ const float AAthreshold = 0.3; // 0.3 is good
 const float SamplesPerPixel = 50.0;
 const float BounceLimit = 50.0;
 
-const int WorldLength = 18; // how many objects in the scene
-/*Sphere World[WorldLength] = Sphere[WorldLength]( 
-    Sphere( vec3(0.0,    1.0, -1.0),   0.5, blue),
-    Sphere( vec3(0.0, -100.5, -1.0), 100.0, green),
-    Sphere( vec3(0.0,    2.0, -1.0),   0.5, yellow)
-);*/
-Sphere World[WorldLength] = Sphere[WorldLength]( 
-    Sphere( vec3(0.0, -1000.0, -1.0), 1000.25, gray),
-    Sphere( vec3(-0.4,   0.5, -1.0),   0.25, red), // left leg
-    Sphere( vec3(-0.4,   0.7, -1.0),   0.25, red),
-    Sphere( vec3(-0.4,   0.6, -1.0),   0.25, red),	
-    Sphere( vec3(-0.4,   0.8, -1.0),   0.25, red),
-    
-    Sphere( vec3(0.4,    0.5, -1.0),   0.25, red), // right leg
-    Sphere( vec3(0.4,    0.6, -1.0),   0.25, red),
-    Sphere( vec3(0.4,    0.7, -1.0),   0.25, red),
-    Sphere( vec3(0.4,    0.8, -1.0),   0.25, red),
+const int WorldLength = iWorld.length();
 
-    Sphere( vec3(0.0,    1.3, -1.0),   0.7, red), // body
-    Sphere( vec3(0.0,    1.5, -1.0),   0.7, red),
-    Sphere( vec3(0.0,    1.7, -1.0),   0.7, red),
-		
-    Sphere( vec3(-0.2,   1.7, -0.55),   0.3, blue), // face
-    Sphere( vec3(-0.15,  1.7, -0.5325),   0.3, blue),
-    Sphere( vec3(0.0,    1.7, -0.50),   0.3, blue),
-    Sphere( vec3(0.15,   1.7, -0.5325),   0.3, blue),
-    Sphere( vec3(0.2,    1.7, -0.55),   0.3, blue),
-		
-    Sphere( vec3(0.0,    1.5, -1.2),   0.3, black) // backpack
+Sphere World[WorldLength] = Sphere[WorldLength]( 
+    Sphere( vec3(0.0,0.0,0.0), 1.0, gray),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, red),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, red)
 );
 
-const int LightLength = 2; // how many lights in the scene
+const int LightLength = iLights.length(); // how many lights in the scene
 Sphere Lights[LightLength] = Sphere[LightLength]( 
     Sphere( vec3(0.0, 200.0, -1.0), 10.0, white),
 		Sphere( vec3(-20.0, 20.0, -1.0), 10.0, white)
 );
+Material 
 //////////////////////////////////////////////////////////////////////////
  
 bool hitSphere (Sphere sphere, Ray r, inout Hit record, float t_min, float t_max) {
@@ -272,6 +247,11 @@ vec3 rayColour (Ray r, Sphere scene[WorldLength]) {
 }
     
 void main() {
+  World[0].centre = vec3(iWorld[0].xyz);
+  World[1].centre = vec3(iWorld[1].xyz);
+  World[2].centre = vec3(iWorld[2].xyz);
+  
+  
 	//World[0].centre.x = sin(iTime);
   //World[0].centre.y = cos(iTime) + 1.0;
 	//World[2].centre.x = -sin(iTime);
@@ -419,6 +399,9 @@ function main() {
   const resolutionLocation = gl.getUniformLocation(program, "iResolution");
   const mouseLocation = gl.getUniformLocation(program, "iMouse");
   const timeLocation = gl.getUniformLocation(program, "iTime");
+	const worldLocation = gl.getUniformLocation(program, "iWorld");
+  const lightsLocation = gl.getUniformLocation(program, "iLights");
+  const matsLocation = gl.getUniformLocation(program, "iMats"); 
 
   // Create a vertex array object (attribute state)
   const vao = gl.createVertexArray();
@@ -485,11 +468,27 @@ function main() {
 
   let then = 0;
   let time = 0;
+  
+  var scene = new Float32Array([
+			-2, 0.0, -2.0,  0,
+			0,  1, -2.0,    0,
+			2,  0.0, -2.0,   0
+	]);
+
+  var lights = new Float32Array([
+			50, 100, -50.0,
+			0,  1000, -20
+	]);
+
+  var mats = new Float32Array([
+			0.2, 0.2, 0.2
+	]);
+  
   function render(now) {
     requestId = undefined;
     now *= 0.001;  // convert to seconds
     const elapsedTime = Math.min(now - then, 0.1);
-    //console.log(Math.round(1/elapsedTime));
+    console.log(Math.round(1/elapsedTime));
     time += elapsedTime;
     then = now;
 
@@ -507,7 +506,10 @@ function main() {
     gl.uniform2f(resolutionLocation, gl.canvas.width, gl.canvas.height);
     gl.uniform2f(mouseLocation, mouseX, mouseY);
     gl.uniform1f(timeLocation, time);
-
+		gl.uniform4fv(worldLocation, scene);
+    gl.uniform3fv(worldLocation, lights);
+    gl.uniform3fv(worldLocation, mats);
+    
     gl.drawArrays(
         gl.TRIANGLES,
         0,     // offset
