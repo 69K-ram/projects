@@ -20,9 +20,8 @@
 <script id="fs">#version 300 es // specifies the newest version of WebGL
 precision highp float; // sets floats to high precision
 
-uniform vec4 iWorld[3];
+uniform vec4 iWorld[10];
 uniform vec3 iLights[2];
-uniform vec3 iMats[2];
 
 uniform vec2 iResolution; // passed in from JavaScript, holds the resolution of the canvas it's displaying on
 uniform vec2 iMouse; // passed in from JavaScript, holds the mouse location (x,y)
@@ -46,6 +45,16 @@ float trand(vec2 n, float seed)
     return nrand(n * seed * iTime) * 2.0 - 1.0;
 }
 
+vec3 lessRandomInSphere(vec2 uv){
+    // this is doing rejection sampling, which is simple but not super efficient
+    vec3 p;
+    do {
+        p = vec3(nrand(uv) * 2.0 - 1.0,
+                 nrand(uv * 2.333) * 2.0 - 1.0,
+                 nrand(uv * -1.134) * 2.0 - 1.0);
+    } while (dot(p, p) >= 1.0);
+    return p;
+}
 vec3 randomInSphere(vec2 uv, float seed){
     // this is doing rejection sampling, which is simple but not super efficient
     vec3 p;
@@ -57,7 +66,6 @@ vec3 randomInSphere(vec2 uv, float seed){
     } while (dot(p, p) >= 1.0);
     return p;
 }
-    
 struct Ray { // variable structure for the ray
 	vec3 origin; // origin is the 3d location it started at
 	vec3 direction; // 3d vector of where it's directed
@@ -92,15 +100,11 @@ Camera cam = Camera(
     -1.0 // needs to be negative or the camera will be facing the opposite way expected
 );
 
-const Material blue = Material( vec3(0.0, 0.0, 0.9), 0.99);
-
-const Material red  = Material( vec3(0.9, 0.0, 0.0), 0.1);
-
-const Material green  = Material( vec3(0.0, 0.7, 0.2), 0.09);
-const Material black = Material( vec3(0.1, 0.1, 0.1), 0.1);
-const Material gray = Material( vec3(0.5, 0.5, 0.5), 0.3);
-const Material yellow  = Material( vec3(0.5, 0.5, 0.0), 0.5);
-const Material white = Material( vec3(0.9, 0.9, 0.9), 0.0);
+const int matsLength = 2;//iMats.length();
+Material Mats[matsLength] = Material[matsLength](
+	Material( vec3(0.2, 0.2, 0.2), 0.5),
+  Material( vec3(0.2, 0.9, 0.2), 0.9)
+);
 
 // calculates the ray from the camera position and the offset (for anti aliasing)
 Ray GetRay (Camera camera, vec2 shift) { 
@@ -131,17 +135,23 @@ const float BounceLimit = 50.0;
 const int WorldLength = iWorld.length();
 
 Sphere World[WorldLength] = Sphere[WorldLength]( 
-    Sphere( vec3(0.0,0.0,0.0), 1.0, gray),
-    Sphere( vec3(0.0,0.0,0.0), 1.0, red),
-    Sphere( vec3(0.0,0.0,0.0), 1.0, red)
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5))
 );
 
 const int LightLength = iLights.length(); // how many lights in the scene
 Sphere Lights[LightLength] = Sphere[LightLength]( 
-    Sphere( vec3(0.0, 200.0, -1.0), 10.0, white),
-		Sphere( vec3(-20.0, 20.0, -1.0), 10.0, white)
+    Sphere( vec3(0.0, 0.0, -1.0), 10.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+		Sphere( vec3(0.0, 0.0, -1.0), 10.0, Material(vec3(0.2,0.2,0.2), 0.5))
 );
-Material 
 //////////////////////////////////////////////////////////////////////////
  
 bool hitSphere (Sphere sphere, Ray r, inout Hit record, float t_min, float t_max) {
@@ -226,8 +236,8 @@ vec3 rayColour (Ray r, Sphere scene[WorldLength]) {
   	bounces++;
 		
 		// bounces the ray
-		vec3 bounceTarget = reflect(r.direction , record.normal) + record.p;
-		//vec3 bounceTarget = record.normal + record.p + randomInSphere(gl_FragCoord.xy, bounces)/2.0;
+		//vec3 bounceTarget = reflect(r.direction , record.normal) + record.p;
+		vec3 bounceTarget = record.normal + record.p + lessRandomInSphere(gl_FragCoord.xy * iTime) / 2.0;
 		r.origin = record.p; // the new origin of the ray is where it hit another object
 		r.direction = bounceTarget - r.origin;
 		
@@ -247,16 +257,30 @@ vec3 rayColour (Ray r, Sphere scene[WorldLength]) {
 }
     
 void main() {
-  World[0].centre = vec3(iWorld[0].xyz);
-  World[1].centre = vec3(iWorld[1].xyz);
-  World[2].centre = vec3(iWorld[2].xyz);
+	Lights[0].centre = iLights[0].xyz;
+  Lights[1].centre = iLights[1].xyz;
   
-  
-	//World[0].centre.x = sin(iTime);
-  //World[0].centre.y = cos(iTime) + 1.0;
-	//World[2].centre.x = -sin(iTime);
-  //World[2].centre.y = -cos(iTime) + 1.0;
-  cam.location.z = sin(iTime)/2.0 + 1.5;
+  World[0].centre = iWorld[0].xyz; 
+  World[0].mat = Mats[int(iWorld[0].w)]; 
+  World[1].centre = iWorld[1].xyz; 
+  World[1].mat = Mats[int(iWorld[1].w)]; 
+  World[2].centre = iWorld[2].xyz; 
+  World[2].mat = Mats[int(iWorld[2].w)]; 
+  World[3].centre = iWorld[3].xyz; 
+  World[3].mat = Mats[int(iWorld[3].w)]; 
+  World[4].centre = iWorld[3].xyz; 
+  World[4].mat = Mats[int(iWorld[3].w)]; 
+  World[5].centre = iWorld[4].xyz; 
+  World[5].mat = Mats[int(iWorld[4].w)]; 
+  World[6].centre = iWorld[5].xyz; 
+  World[6].mat = Mats[int(iWorld[5].w)]; 
+  World[7].centre = iWorld[6].xyz; 
+  World[7].mat = Mats[int(iWorld[6].w)]; 
+  World[8].centre = iWorld[7].xyz; 
+  World[8].mat = Mats[int(iWorld[7].w)]; 
+  World[9].centre = iWorld[9].xyz; 
+  World[9].mat = Mats[int(iWorld[9].w)]; 
+  //cam.location.z = sin(iTime)/2.0 + 1.5;
  	
   vec3 AAcheck[4];
 	float AAdist = 1.0;
@@ -276,7 +300,8 @@ void main() {
 	vec3 horizontalDif = (AAcheck[3] - AAcheck[1]) - (AAcheck[1] - AAcheck[3]); // the difference between the colour a bit left and a bit right
 	vec3 colourDif = abs(verticalDif) + abs(horizontalDif); // add both colour differences
 	float totalDif = colourDif.r + colourDif.g + colourDif.b;
-	/*
+	
+  /*
 	if (totalDif >= 0.01) {
 		outColour = vec4(1.0, 1.0, 1.0, 1.0);
 	}
@@ -284,7 +309,7 @@ void main() {
 		outColour = vec4(0.3, 0.3, 0.3, 1.0);
 	}
 	*/
-	
+	///*
 	// if the difference in colours is greater than a threshold, then multisample the pixel for AA
 	if(totalDif > AAthreshold) {
 		
@@ -306,6 +331,7 @@ void main() {
 		vec3 avgColour = (AAcheck[0] + AAcheck[1] + AAcheck[2] + AAcheck[3]) / 4.0; // averages the colours from the AA check
 		outColour = vec4(avgColour, 1.0);
 	}
+  //*/
   outColour = vec4(
     sqrt(outColour.x),
     sqrt(outColour.y),
@@ -401,7 +427,6 @@ function main() {
   const timeLocation = gl.getUniformLocation(program, "iTime");
 	const worldLocation = gl.getUniformLocation(program, "iWorld");
   const lightsLocation = gl.getUniformLocation(program, "iLights");
-  const matsLocation = gl.getUniformLocation(program, "iMats"); 
 
   // Create a vertex array object (attribute state)
   const vao = gl.createVertexArray();
@@ -470,18 +495,21 @@ function main() {
   let time = 0;
   
   var scene = new Float32Array([
-			-2, 0.0, -2.0,  0,
-			0,  1, -2.0,    0,
-			2,  0.0, -2.0,   0
+			-2, 0.0, -2.0,  1,
+			0,  0.5, -2.0,  1,
+			2,  1.0, -2.0,  0,
+  		-2, 0.5, -3.0,  0,
+			0,  1,   -3.0,  1,
+			2,  0.0, -4.0,  0,
+      -2,  2.0, -4.0,  1,
+      0,  3.0, -5.0,  0,
+      2,  3.0, -5.0,  1,
+      -2,  0.3, -6.0,  0,
 	]);
 
   var lights = new Float32Array([
 			50, 100, -50.0,
 			0,  1000, -20
-	]);
-
-  var mats = new Float32Array([
-			0.2, 0.2, 0.2
 	]);
   
   function render(now) {
@@ -508,7 +536,6 @@ function main() {
     gl.uniform1f(timeLocation, time);
 		gl.uniform4fv(worldLocation, scene);
     gl.uniform3fv(worldLocation, lights);
-    gl.uniform3fv(worldLocation, mats);
     
     gl.drawArrays(
         gl.TRIANGLES,
