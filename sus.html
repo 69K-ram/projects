@@ -20,7 +20,7 @@
 <script id="fs">#version 300 es // specifies the newest version of WebGL
 precision highp float; // sets floats to high precision
 
-uniform vec4 iWorld[10];
+uniform vec4 iWorld[24];
 uniform vec3 iLights[2];
 
 uniform vec2 iResolution; // passed in from JavaScript, holds the resolution of the canvas it's displaying on
@@ -45,13 +45,13 @@ float trand(vec2 n, float seed)
     return nrand(n * seed * iTime) * 2.0 - 1.0;
 }
 
-vec3 lessRandomInSphere(vec2 uv){
+vec3 lessRandomInSphere(vec2 uv, float seed){
     // this is doing rejection sampling, which is simple but not super efficient
     vec3 p;
     do {
-        p = vec3(nrand(uv) * 2.0 - 1.0,
-                 nrand(uv * 2.333) * 2.0 - 1.0,
-                 nrand(uv * -1.134) * 2.0 - 1.0);
+        p = vec3(nrand(uv * seed),
+                 nrand(uv * 2.333 * seed),
+                 nrand(uv * -1.134 * seed))  * 2.0 - 1.0;
     } while (dot(p, p) >= 1.0);
     return p;
 }
@@ -102,8 +102,8 @@ Camera cam = Camera(
 
 const int matsLength = 2;//iMats.length();
 Material Mats[matsLength] = Material[matsLength](
-	Material( vec3(0.2, 0.2, 0.2), 0.5),
-  Material( vec3(0.2, 0.9, 0.2), 0.9)
+	Material( vec3(0.2, 0.2, 0.2), 0.8),
+  Material( vec3(0.05, 0.2, 0.8), 0.2)
 );
 
 // calculates the ray from the camera position and the offset (for anti aliasing)
@@ -129,8 +129,8 @@ vec3 at (in Ray r, float t) { // location of ray at t value
 
 //////////////////////////////////////////////////////////////////////////
 const float AAthreshold = 0.3; // 0.3 is good
-const float SamplesPerPixel = 50.0;
-const float BounceLimit = 50.0;
+const float SamplesPerPixel = 20.0;
+const float BounceLimit = 7.0;
 
 const int WorldLength = iWorld.length();
 
@@ -144,7 +144,21 @@ Sphere World[WorldLength] = Sphere[WorldLength](
     Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
     Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
     Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
-    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5))
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0,0.0,0.0), 1.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(55.0,20.0,-100.0), 10.0, Material(vec3(0.5,0.0,0.7), 0.5)), // sun purple
+    Sphere( vec3(45.0,20.0,-100.0), 10.0, Material(vec3(0.8,0.6,0.0), 0.5)), // sun yellow
+    Sphere( vec3(35.0,20.0,-100.0), 10.0, Material(vec3(0.6,0.5,0.0), 0.5)), // sun orang
+    Sphere( vec3(0.0, -500,0.0), 500.0, Material(vec3(0.2,0.2,0.2), 0.7))  // ground
 );
 
 const int LightLength = iLights.length(); // how many lights in the scene
@@ -185,7 +199,7 @@ bool hitWorld (Sphere scene[WorldLength], Ray r, out Hit record) {
     float closest = 100.0;
     
     for (int i = 0; i <= WorldLength - 1; i++) {
-      if ( hitSphere(World[i], r, temp_hit, 0.001, 100.0) == true && temp_hit.t < closest) {
+      if ( hitSphere(World[i], r, temp_hit, 0.001, 200.0) == true && temp_hit.t < closest) {
         hitSomething = true;
         closest = temp_hit.t;
 				temp_hit.object = i;
@@ -220,7 +234,7 @@ vec3 skyColour (vec3 direction) { // calculates a colour from a blueish gradient
 	return vec3( (1.0-t)*vec3(1,1,1) + t*vec3(0.5,0.7,1.0) );
 }
 
-vec3 rayColour (Ray r, Sphere scene[WorldLength]) {
+vec3 rayColour (Ray r, Sphere scene[WorldLength], float randomSeed) {
   Hit record = Hit( vec3(0.0,0.0,0.0), vec3(0.0,0.0,0.0), 0.0, false, 1 );
     
   vec3 unitDirection;
@@ -236,14 +250,15 @@ vec3 rayColour (Ray r, Sphere scene[WorldLength]) {
   	bounces++;
 		
 		// bounces the ray
-		//vec3 bounceTarget = reflect(r.direction , record.normal) + record.p;
-		vec3 bounceTarget = record.normal + record.p + lessRandomInSphere(gl_FragCoord.xy * iTime) / 2.0;
+		vec3 bounceTarget = reflect(r.direction , record.normal) + record.p;
+    //vec3 reflBounceTarget = reflect(r.direction , record.normal) + record.p;
+		//vec3 bounceTarget = record.normal + record.p + lessRandomInSphere(gl_FragCoord.xy, randomSeed) / 2.0;
 		r.origin = record.p; // the new origin of the ray is where it hit another object
 		r.direction = bounceTarget - r.origin;
 		
 		float light = lighting(r, r.direction);
-		
 		colour += ((World[record.object].mat.colour * (1.0 - World[record.object].mat.shiny) * light) + (colour * World[record.object].mat.shiny) * light) * energy;
+		//colour += ((World[record.object].mat.colour * (1.0 - World[record.object].mat.shiny) * light) + (colour * World[record.object].mat.shiny) * light) * energy * max(sin(dot(normalize(bounceTarget - record.p), normalize(reflBounceTarget - record.p)) * 6.28), 0.1);
 		energy -= (1.0 - World[record.object].mat.shiny);
 		
 	}
@@ -280,21 +295,41 @@ void main() {
   World[8].mat = Mats[int(iWorld[7].w)]; 
   World[9].centre = iWorld[9].xyz; 
   World[9].mat = Mats[int(iWorld[9].w)]; 
+  World[10].centre = iWorld[10].xyz; /////////////
+  World[10].mat = Mats[int(iWorld[10].w)]; 
+  World[11].centre = iWorld[11].xyz; 
+  World[11].mat = Mats[int(iWorld[11].w)]; 
+  World[12].centre = iWorld[12].xyz; 
+  World[12].mat = Mats[int(iWorld[12].w)]; 
+  World[13].centre = iWorld[13].xyz; 
+  World[13].mat = Mats[int(iWorld[13].w)]; 
+  World[14].centre = iWorld[13].xyz; 
+  World[14].mat = Mats[int(iWorld[13].w)]; 
+  World[15].centre = iWorld[14].xyz; 
+  World[15].mat = Mats[int(iWorld[14].w)]; 
+  World[16].centre = iWorld[15].xyz; 
+  World[16].mat = Mats[int(iWorld[15].w)]; 
+  World[17].centre = iWorld[16].xyz; 
+  World[17].mat = Mats[int(iWorld[16].w)]; 
+  World[18].centre = iWorld[17].xyz; 
+  World[18].mat = Mats[int(iWorld[17].w)]; 
+  World[19].centre = iWorld[19].xyz; 
+  World[19].mat = Mats[int(iWorld[19].w)]; 
   //cam.location.z = sin(iTime)/2.0 + 1.5;
  	
   vec3 AAcheck[4];
 	float AAdist = 1.0;
 	Ray ray = GetRay(cam, vec2(0.0, AAdist));
-	AAcheck[0] = rayColour(ray, World); // up colour
+	AAcheck[0] = rayColour(ray, World, 0.0); // up colour
 	
 	ray = GetRay(cam, vec2(AAdist, 0.0));
-	AAcheck[1] = rayColour(ray, World); // right colour
+	AAcheck[1] = rayColour(ray, World, 1.1); // right colour
 	
 	ray = GetRay(cam, vec2(0.0, -AAdist));
-	AAcheck[2] = rayColour(ray, World); // down colour
+	AAcheck[2] = rayColour(ray, World, 2.2); // down colour
 	
 	ray = GetRay(cam, vec2(-AAdist, 0.0));
-  AAcheck[3] = rayColour(ray, World); // left colour
+  AAcheck[3] = rayColour(ray, World, 3.3); // left colour
 	
 	vec3 verticalDif = (AAcheck[0] - AAcheck[2]) - (AAcheck[2] - AAcheck[0]); // the differnce between the colour a bit up and a bit down
 	vec3 horizontalDif = (AAcheck[3] - AAcheck[1]) - (AAcheck[1] - AAcheck[3]); // the difference between the colour a bit left and a bit right
@@ -321,7 +356,7 @@ void main() {
 				trand(gl_FragCoord.xy, 0.456 * i)); // random vector from -1,1
     	ray = GetRay(cam, rayShift);
 
-    	outColour += vec4(rayColour(ray, World), 1.0);
+    	outColour += vec4(rayColour(ray, World, i), 1.0);
   	}
 		outColour /= SamplesPerPixel;
 	} 
@@ -497,14 +532,28 @@ function main() {
   var scene = new Float32Array([
 			-2, 0.0, -2.0,  1,
 			0,  0.5, -2.0,  1,
-			2,  1.0, -2.0,  0,
+			2,  0.0, -2.0,  0,
   		-2, 0.5, -3.0,  0,
-			0,  1,   -3.0,  1,
+			0,  0,   -3.0,  1,
 			2,  0.0, -4.0,  0,
-      -2,  2.0, -4.0,  1,
-      0,  3.0, -5.0,  0,
-      2,  3.0, -5.0,  1,
-      -2,  0.3, -6.0,  0,
+      -2,  0.0, -4.0, 1,
+      0,  0.0, -5.0,  0,
+      2,  0.0, -5.0,  1,
+      -2,  0.3, -6.0, 0, //
+			-6, 0.0, -2.0,  1,
+			-5,  0.5, -2.0,  1,
+			-3,  0.0, -2.0,  0,
+  		-2, 0.5, -3.0,  0,
+			0,  0,   -3.0,  1,
+			2,  0.0, -4.0,  0,
+      -2,  0.0, -4.0, 1,
+      0,  0.0, -5.0,  0,
+      2,  0.0, -5.0,  1,
+      0,  0.0, -5.0,  0,
+      2,  0.0, -5.0,  1,
+      0,  0.0, -5.0,  0,
+      2,  0.0, -5.0,  1,
+      -2,  0.3, -6.0, 0
 	]);
 
   var lights = new Float32Array([
