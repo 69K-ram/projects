@@ -13,15 +13,15 @@
     }
   </style>
   <div class="divcanvas">
-  	<canvas id="c"></canvas>
-	</div>
+    <canvas id="c"></canvas>
+  </div>
 </html>
 
 <script id="fs">#version 300 es // specifies the newest version of WebGL
 precision highp float; // sets floats to high precision
 
 uniform vec4 iWorld[24];
-uniform vec3 iLights[2];
+uniform vec3 iLights[3];
 
 uniform vec2 iResolution; // passed in from JavaScript, holds the resolution of the canvas it's displaying on
 uniform vec2 iMouse; // passed in from JavaScript, holds the mouse location (x,y)
@@ -33,7 +33,7 @@ out vec4 outColour; //(r,g,b), opacity
 // randomizer function (found online)
 float nrand(vec2 p)
 {
-	vec3 p3  = fract(vec3(p.xyx) * .1031);
+  vec3 p3  = fract(vec3(p.xyx) * .1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
 }
@@ -67,27 +67,27 @@ vec3 randomInSphere(vec2 uv, float seed){
     return p;
 }
 struct Ray { // variable structure for the ray
-	vec3 origin; // origin is the 3d location it started at
-	vec3 direction; // 3d vector of where it's directed
+  vec3 origin; // origin is the 3d location it started at
+  vec3 direction; // 3d vector of where it's directed
 };
 
 struct Hit { // variable structure to store information when the ray hits something
-	vec3 p; // the 3d position of where the ray intersected with something
-	vec3 normal; // surface normal where ray hit. directly away from the object. needed for calculating reflections
-	float t; // how far along the rays path the intersect occured
-	bool inside; // if the ray hit the outside or inside of an object
-	int object; // array id of object hit
+  vec3 p; // the 3d position of where the ray intersected with something
+  vec3 normal; // surface normal where ray hit. directly away from the object. needed for calculating reflections
+  float t; // how far along the rays path the intersect occured
+  bool inside; // if the ray hit the outside or inside of an object
+  int object; // array id of object hit
 };
 
 struct Material { // material structure for objects
-	vec3 colour; // r,g,b colour of the material
-	float shiny; // how reflective it is
+  vec3 colour; // r,g,b colour of the material
+  float shiny; // how reflective it is
 };
 
 struct Sphere { // sphere object
     vec3 centre; // 3d position of where the centre of the sphere is
     float radius; // radius of sphere
-		Material mat; // the material of the sphere
+    Material mat; // the material of the sphere
 };
 
 struct Camera { // camera structure
@@ -100,22 +100,26 @@ Camera cam = Camera(
     -1.0 // needs to be negative or the camera will be facing the opposite way expected
 );
 
-const int matsLength = 2;//iMats.length();
+const int matsLength = 6;//iMats.length();
 Material Mats[matsLength] = Material[matsLength](
-	Material( vec3(0.2, 0.2, 0.2), 0.8),
-  Material( vec3(0.05, 0.2, 0.8), 0.2)
+  Material( vec3(0.2, 0.2, 0.2), 1.0),
+  Material( vec3(0.0, 0.3, 0.0), 0.3),
+  Material( vec3(0.2, 0.2, 0.2), 1.0), //ground
+  Material( vec3(0.9, 0.8, 0.0), 0.0), //s1
+  Material( vec3(0.8, 0.3, 0.0), 0.0), //s2
+  Material( vec3(0.6, 0.0, 0.7), 0.0) //s4
 );
 
 // calculates the ray from the camera position and the offset (for anti aliasing)
 Ray GetRay (Camera camera, vec2 shift) { 
-	vec3 pixelTargetUV = vec3(
+  vec3 pixelTargetUV = vec3(
     (gl_FragCoord.xy/iResolution.xy) * 2.0 - 1.0,
     camera.focalDistance
   ); // x,y direction from [-1,1]
-	
-	shift /= iResolution.xy;
-	shift *= 2.0 - 1.0;
-	pixelTargetUV.xy += shift;
+  
+  shift /= iResolution.xy;
+  shift *= 2.0 - 1.0;
+  pixelTargetUV.xy += shift;
   pixelTargetUV += camera.location;
   float aspectRatio = iResolution.x / iResolution.y;
   pixelTargetUV.x *= aspectRatio;
@@ -129,8 +133,8 @@ vec3 at (in Ray r, float t) { // location of ray at t value
 
 //////////////////////////////////////////////////////////////////////////
 const float AAthreshold = 0.3; // 0.3 is good
-const float SamplesPerPixel = 20.0;
-const float BounceLimit = 7.0;
+const float SamplesPerPixel = 60.0;
+const float BounceLimit = 12.0;
 
 const int WorldLength = iWorld.length();
 
@@ -163,46 +167,47 @@ Sphere World[WorldLength] = Sphere[WorldLength](
 
 const int LightLength = iLights.length(); // how many lights in the scene
 Sphere Lights[LightLength] = Sphere[LightLength]( 
-    Sphere( vec3(0.0, 0.0, -1.0), 10.0, Material(vec3(0.2,0.2,0.2), 0.5)),
-		Sphere( vec3(0.0, 0.0, -1.0), 10.0, Material(vec3(0.2,0.2,0.2), 0.5))
+    Sphere( vec3(0.0, -10.0, -1.0), 10.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0, -10.0, -1.0), 10.0, Material(vec3(0.2,0.2,0.2), 0.5)),
+    Sphere( vec3(0.0, -10.0, -1.0), 10.0, Material(vec3(0.2,0.2,0.2), 0.5))
 );
 //////////////////////////////////////////////////////////////////////////
  
 bool hitSphere (Sphere sphere, Ray r, inout Hit record, float t_min, float t_max) {
-	vec3 oc = r.origin - sphere.centre;
-	
-	float a = dot(r.direction, r.direction);
-	float half_b = dot(oc, r.direction);
-	float c = dot(oc, oc) - sphere.radius*sphere.radius;
-	
-	float discriminant = half_b*half_b - a*c;
-	if (discriminant < 0.0) { return false; }
-	float sqrtd = sqrt(discriminant);
-	
-	float root = (-half_b - sqrtd) / a;
-	if (root < t_min || t_max < root) {
-		root = (-half_b + sqrtd) / a;
-		if (root < t_min || t_max < root){
-			return false;
-		}
-	}
-	record.t = root;
-	record.p = at(r, root);
-	//record.normal = normalize((record.p - sphere.centre) / sphere.radius);
-	record.normal = (record.p - sphere.centre) / sphere.radius;
-	return true;
+  vec3 oc = r.origin - sphere.centre;
+  
+  float a = dot(r.direction, r.direction);
+  float half_b = dot(oc, r.direction);
+  float c = dot(oc, oc) - sphere.radius*sphere.radius;
+  
+  float discriminant = half_b*half_b - a*c;
+  if (discriminant < 0.0) { return false; }
+  float sqrtd = sqrt(discriminant);
+  
+  float root = (-half_b - sqrtd) / a;
+  if (root < t_min || t_max < root) {
+    root = (-half_b + sqrtd) / a;
+    if (root < t_min || t_max < root){
+      return false;
+    }
+  }
+  record.t = root;
+  record.p = at(r, root);
+  //record.normal = normalize((record.p - sphere.centre) / sphere.radius);
+  record.normal = (record.p - sphere.centre) / sphere.radius;
+  return true;
 }
 
 bool hitWorld (Sphere scene[WorldLength], Ray r, out Hit record) {
-		Hit temp_hit = Hit( vec3(0.0,0.0,0.0), vec3(0.0,0.0,0.0), 0.0, false, 0);
+    Hit temp_hit = Hit( vec3(0.0,0.0,0.0), vec3(0.0,0.0,0.0), 0.0, false, 0);
     bool hitSomething = false;
     float closest = 100.0;
     
     for (int i = 0; i <= WorldLength - 1; i++) {
-      if ( hitSphere(World[i], r, temp_hit, 0.001, 200.0) == true && temp_hit.t < closest) {
+      if ( hitSphere(World[i], r, temp_hit, 0.001, 300.0) == true && temp_hit.t < closest) {
         hitSomething = true;
         closest = temp_hit.t;
-				temp_hit.object = i;
+        temp_hit.object = i;
         record = temp_hit;
         }
     }
@@ -210,28 +215,30 @@ bool hitWorld (Sphere scene[WorldLength], Ray r, out Hit record) {
 }
 
 float lighting(Ray r, vec3 normal) {
-	// calculates light from 0-1 at a location given the direction of the ray
-	Hit shadowHit = Hit( vec3(0.0,0.0,0.0), vec3(0.0,0.0,0.0), 0.0, false, 0); 
+  // calculates light from 0-1 at a location given the direction of the ray
+  Hit shadowHit = Hit( vec3(0.0,0.0,0.0), vec3(0.0,0.0,0.0), 0.0, false, 0); 
 
-	float light = 0.3; // initial ambient amount. So nothing is fully in the dark
-	vec3 reflected = normalize(reflect(r.direction, normal));
+  float light = 0.1; // initial ambient amount. So nothing is fully in the dark
+  vec3 reflected = normalize(reflect(r.direction, normal));
   for (int i = 0; i <= LightLength - 1; i++) {
     //Ray lightRay = Ray(r.origin, normalize( (Lights[i].centre + (randomInSphere(gl_FragCoord.xy, 1.234) * Lights[i].radius) - r.origin) ));
-		Ray lightRay = Ray(r.origin, normalize(Lights[i].centre  - r.origin) ); 
-		
+    Ray lightRay = Ray(r.origin, normalize(Lights[i].centre  - r.origin) ); 
+    
     if (hitWorld(World, lightRay, shadowHit) == true) {
     } else {
-    	light += max( dot(lightRay.direction, normalize(normal)), 0.0); // dot product of the direction to the light and the surface normal gives how much light that spot is recieving. the higher the angle between the normal and the light, the darker it is. maxes with 0 because dot product can return negative values, and nothing can be negatively bright
-			light += max( dot(reflected, normalize(r.direction)), 0.0); // dot product between the ray that bounces off the object and the ray from the camera to the object. this gives the bright highlights on objects. maxes with 0 to prevent negative values
+      light += max( dot(lightRay.direction, normalize(normal)), 0.0); // dot product of the direction to the light and the surface normal gives how much light that spot is recieving. the higher the angle between the normal and the light, the darker it is. maxes with 0 because dot product can return negative values, and nothing can be negatively bright
+      light += max( dot(reflected, normalize(r.direction)), 0.0); // dot product between the ray that bounces off the object and the ray from the camera to the object. this gives the bright highlights on objects. maxes with 0 to prevent negative values
     }
   }
   return light;
 }
 
 vec3 skyColour (vec3 direction) { // calculates a colour from a blueish gradient depending on the vertical component of the rays direction 
-	// used for the sky when the ray doesn't hit anything
-	float t = 0.5 * (normalize(direction).y + 1.0);
-	return vec3( (1.0-t)*vec3(1,1,1) + t*vec3(0.5,0.7,1.0) );
+  // used for the sky when the ray doesn't hit anything
+  //float t = 0.5 * (normalize(direction).y + 1.0);
+  //return vec3( (1.0-t)*vec3(1,1,1) + t*vec3(0.5,0.7,1.0) );
+  float t = normalize(direction).y;
+  return 0.3 * vec3( (1.0-t)*vec3(0.0,0.0,0.2) + t*vec3(0.3,0.0,0.2) );
 }
 
 vec3 rayColour (Ray r, Sphere scene[WorldLength], float randomSeed) {
@@ -239,42 +246,43 @@ vec3 rayColour (Ray r, Sphere scene[WorldLength], float randomSeed) {
     
   vec3 unitDirection;
   float t;
-	
+  
   float bounces = 0.0; // how many times the ray has bounced
-	
+  
   vec3 colour = vec3(0.0, 0.0, 0.0); // colour from the ray
-	
-	float energy = 1.0; // how much of the rays lighs hasn't been absorbed
+  
+  float energy = 1.0; // how much of the rays lighs hasn't been absorbed
 
   while ( hitWorld(scene, r, record) == true && bounces < BounceLimit && energy >= 0.0) {
-  	bounces++;
-		
-		// bounces the ray
-		vec3 bounceTarget = reflect(r.direction , record.normal) + record.p;
+    bounces++;
+    
+    // bounces the ray
+    vec3 bounceTarget = reflect(r.direction , record.normal) + record.p;
     //vec3 reflBounceTarget = reflect(r.direction , record.normal) + record.p;
-		//vec3 bounceTarget = record.normal + record.p + lessRandomInSphere(gl_FragCoord.xy, randomSeed) / 2.0;
-		r.origin = record.p; // the new origin of the ray is where it hit another object
-		r.direction = bounceTarget - r.origin;
-		
-		float light = lighting(r, r.direction);
-		colour += ((World[record.object].mat.colour * (1.0 - World[record.object].mat.shiny) * light) + (colour * World[record.object].mat.shiny) * light) * energy;
-		//colour += ((World[record.object].mat.colour * (1.0 - World[record.object].mat.shiny) * light) + (colour * World[record.object].mat.shiny) * light) * energy * max(sin(dot(normalize(bounceTarget - record.p), normalize(reflBounceTarget - record.p)) * 6.28), 0.1);
-		energy -= (1.0 - World[record.object].mat.shiny);
-		
-	}
-	if (bounces > 0.0) {
-		if (energy > 0.0) {
-			colour += skyColour(r.direction) * energy * World[record.object].mat.shiny;
-		}
-		return colour;
-	} 
-	return skyColour(r.direction);
+    //vec3 bounceTarget = record.normal + record.p + lessRandomInSphere(gl_FragCoord.xy, randomSeed) / 2.0;
+    r.origin = record.p; // the new origin of the ray is where it hit another object
+    r.direction = bounceTarget - r.origin;
+    
+    float light = lighting(r, r.direction);
+    colour += ((World[record.object].mat.colour * (1.0 - World[record.object].mat.shiny) * light) + (colour * World[record.object].mat.shiny) * light) * energy;
+    //colour += ((World[record.object].mat.colour * (1.0 - World[record.object].mat.shiny) * light) + (colour * World[record.object].mat.shiny) * light) * energy * max(sin(dot(normalize(bounceTarget - record.p), normalize(reflBounceTarget - record.p)) * 6.28), 0.1);
+    energy -= (1.0 - World[record.object].mat.shiny);
+    
+  }
+  if (bounces > 0.0) {
+    if (energy > 0.0) {
+      colour += skyColour(r.direction) * energy * World[record.object].mat.shiny;
+    }
+    return colour;
+  } 
+  return skyColour(r.direction);
 }
     
 void main() {
-	Lights[0].centre = iLights[0].xyz;
-  Lights[1].centre = iLights[1].xyz;
-  
+  Lights[0].centre = iLights[0].xyz; Lights[0].radius = 10.0;
+  Lights[1].centre = iLights[1].xyz; Lights[1].radius = 10.0;
+  Lights[2].centre = iLights[2].xyz; Lights[2].radius = 10.0;
+
   World[0].centre = iWorld[0].xyz; 
   World[0].mat = Mats[int(iWorld[0].w)]; 
   World[1].centre = iWorld[1].xyz; 
@@ -315,57 +323,65 @@ void main() {
   World[18].mat = Mats[int(iWorld[17].w)]; 
   World[19].centre = iWorld[19].xyz; 
   World[19].mat = Mats[int(iWorld[19].w)]; 
+  World[20].centre = iWorld[20].xyz; 
+  World[20].mat = Mats[int(iWorld[20].w)]; 
+  World[21].centre = iWorld[21].xyz; 
+  World[21].mat = Mats[int(iWorld[21].w)]; 
+  World[22].centre = iWorld[22].xyz; 
+  World[22].mat = Mats[int(iWorld[22].w)]; 
+  World[23].centre = iWorld[23].xyz; 
+  World[23].mat = Mats[int(iWorld[23].w)]; 
   //cam.location.z = sin(iTime)/2.0 + 1.5;
- 	
+  
   vec3 AAcheck[4];
-	float AAdist = 1.0;
-	Ray ray = GetRay(cam, vec2(0.0, AAdist));
-	AAcheck[0] = rayColour(ray, World, 0.0); // up colour
-	
-	ray = GetRay(cam, vec2(AAdist, 0.0));
-	AAcheck[1] = rayColour(ray, World, 1.1); // right colour
-	
-	ray = GetRay(cam, vec2(0.0, -AAdist));
-	AAcheck[2] = rayColour(ray, World, 2.2); // down colour
-	
-	ray = GetRay(cam, vec2(-AAdist, 0.0));
+  float AAdist = 1.0;
+  Ray ray = GetRay(cam, vec2(0.0, AAdist));
+  AAcheck[0] = rayColour(ray, World, 0.0); // up colour
+  
+  ray = GetRay(cam, vec2(AAdist, 0.0));
+  AAcheck[1] = rayColour(ray, World, 1.1); // right colour
+  
+  ray = GetRay(cam, vec2(0.0, -AAdist));
+  AAcheck[2] = rayColour(ray, World, 2.2); // down colour
+  
+  ray = GetRay(cam, vec2(-AAdist, 0.0));
   AAcheck[3] = rayColour(ray, World, 3.3); // left colour
-	
-	vec3 verticalDif = (AAcheck[0] - AAcheck[2]) - (AAcheck[2] - AAcheck[0]); // the differnce between the colour a bit up and a bit down
-	vec3 horizontalDif = (AAcheck[3] - AAcheck[1]) - (AAcheck[1] - AAcheck[3]); // the difference between the colour a bit left and a bit right
-	vec3 colourDif = abs(verticalDif) + abs(horizontalDif); // add both colour differences
-	float totalDif = colourDif.r + colourDif.g + colourDif.b;
-	
+  
+  vec3 verticalDif = (AAcheck[0] - AAcheck[2]) - (AAcheck[2] - AAcheck[0]); // the differnce between the colour a bit up and a bit down
+  vec3 horizontalDif = (AAcheck[3] - AAcheck[1]) - (AAcheck[1] - AAcheck[3]); // the difference between the colour a bit left and a bit right
+  vec3 colourDif = abs(verticalDif) + abs(horizontalDif); // add both colour differences
+  float totalDif = colourDif.r + colourDif.g + colourDif.b;
+  
   /*
-	if (totalDif >= 0.01) {
-		outColour = vec4(1.0, 1.0, 1.0, 1.0);
-	}
-	else {
-		outColour = vec4(0.3, 0.3, 0.3, 1.0);
-	}
-	*/
-	///*
-	// if the difference in colours is greater than a threshold, then multisample the pixel for AA
-	if(totalDif > AAthreshold) {
-		
-		outColour = vec4(0.0, 0.0, 0.0, 0.0);
-  	for (float i; i < SamplesPerPixel; i++) {
-	
-			vec2 rayShift = vec2(
-				trand(gl_FragCoord.xy, 0.123 * i),
-				trand(gl_FragCoord.xy, 0.456 * i)); // random vector from -1,1
-    	ray = GetRay(cam, rayShift);
+  if (totalDif >= 0.01) {
+    outColour = vec4(1.0, 1.0, 1.0, 1.0);
+  }
+  else {
+    outColour = vec4(0.3, 0.3, 0.3, 1.0);
+  }
+  */
+  ///*
+  // if the difference in colours is greater than a threshold, then multisample the pixel for AA
+  if(totalDif > AAthreshold) {
+    
+    outColour = vec4(0.0, 0.0, 0.0, 0.0);
+    for (float i; i < SamplesPerPixel; i++) {
+  
+      vec2 rayShift = vec2(
+        trand(gl_FragCoord.xy, 0.123 * i),
+        trand(gl_FragCoord.xy, 0.456 * i)); // random vector from -1,1
+      ray = GetRay(cam, rayShift);
 
-    	outColour += vec4(rayColour(ray, World, i), 1.0);
-  	}
-		outColour /= SamplesPerPixel;
-	} 
-	else {
-		ray = GetRay(cam, vec2(0.0, 0.0) );
+      outColour += vec4(rayColour(ray, World, i), 1.0);
+    }
+    outColour /= SamplesPerPixel;
+  } 
+  else {
+    ray = GetRay(cam, vec2(0.0, 0.0) );
     //outColour = vec4(rayColour(ray, World), 1.0);
-		vec3 avgColour = (AAcheck[0] + AAcheck[1] + AAcheck[2] + AAcheck[3]) / 4.0; // averages the colours from the AA check
-		outColour = vec4(avgColour, 1.0);
-	}
+    vec3 avgColour = (AAcheck[0] + AAcheck[1] + AAcheck[2] + AAcheck[3]) / 4.0; // averages the colours from the AA check
+    outColour = vec4(avgColour, 1.0);
+  }
   //*/
   outColour = vec4(
     sqrt(outColour.x),
@@ -457,11 +473,11 @@ function main() {
   const positionAttributeLocation = gl.getAttribLocation(program, "a_position");
 
   // look up uniform locations
-  const resolutionLocation = gl.getUniformLocation(program, "iResolution");
-  const mouseLocation = gl.getUniformLocation(program, "iMouse");
-  const timeLocation = gl.getUniformLocation(program, "iTime");
-	const worldLocation = gl.getUniformLocation(program, "iWorld");
-  const lightsLocation = gl.getUniformLocation(program, "iLights");
+  var resolutionLocation = gl.getUniformLocation(program, 'iResolution');
+  var mouseLocation = gl.getUniformLocation(program, 'iMouse');
+  var timeLocation = gl.getUniformLocation(program, 'iTime');
+  var worldLocation = gl.getUniformLocation(program, 'iWorld');
+  var lightsLocation = gl.getUniformLocation(program, 'iLights');
 
   // Create a vertex array object (attribute state)
   const vao = gl.createVertexArray();
@@ -529,37 +545,38 @@ function main() {
   let then = 0;
   let time = 0;
   
-  var scene = new Float32Array([
-			-2, 0.0, -2.0,  1,
-			0,  0.5, -2.0,  1,
-			2,  0.0, -2.0,  0,
-  		-2, 0.5, -3.0,  0,
-			0,  0,   -3.0,  1,
-			2,  0.0, -4.0,  0,
-      -2,  0.0, -4.0, 1,
-      0,  0.0, -5.0,  0,
-      2,  0.0, -5.0,  1,
-      -2,  0.3, -6.0, 0, //
-			-6, 0.0, -2.0,  1,
-			-5,  0.5, -2.0,  1,
-			-3,  0.0, -2.0,  0,
-  		-2, 0.5, -3.0,  0,
-			0,  0,   -3.0,  1,
-			2,  0.0, -4.0,  0,
-      -2,  0.0, -4.0, 1,
-      0,  0.0, -5.0,  0,
-      2,  0.0, -5.0,  1,
-      0,  0.0, -5.0,  0,
-      2,  0.0, -5.0,  1,
-      0,  0.0, -5.0,  0,
-      2,  0.0, -5.0,  1,
-      -2,  0.3, -6.0, 0
-	]);
+  let scene = new Float32Array([
+      -2.0,  -0.5, -2.0,  1.0,
+       0.0,  -0.5, -2.0,  1.0,
+       2.0,  -0.5, -2.0,  0.0,
+      -2.0,  -0.5, -3.0,  0.0,
+       0.0,  -0.5, -3.0,  1.0,
+       2.0,  -0.5, -3.0,  0.0,
+      -2.0,  -0.5, -5.0,  1.0,
+       0.0,  -0.5, -5.0,  0.0,
+       2.0,  -0.5, -5.0,  1.0,
+      -20.0,  0.0, 0.0,  0.0,
+      -60.0,  0.0, 0.0,  1.0,
+      -50.0,  0.0, 2.0,  1.0,
+      -30.0,  0.0, 2.0,  0.0,
+      -20.0,  0.0, 3.0,  0.0,
+      -20.0,  0.0, 3.0,  1.0,
+      -20.0,  0.0, 4.0,  0.0,
+      -20.0,  0.0, 4.0,  1.0,
+      -20.0,  0.0, 5.0,  0.0,
+      -20.0,  0.0, 5.0,  1.0,
+      -20.0,  0.0, 5.0,  0.0,
+      -50.0,  0.0, -90.0, 3.0,// sun 1
+        0.0,   10.0,  -90.0, 4.0, // sun 2 
+       50.0,   20.0,  -90.0, 5.0, // sun 3
+       0.0, -500.5, 0.0, 2.0  // ground
+  ]);
 
-  var lights = new Float32Array([
-			50, 100, -50.0,
-			0,  1000, -20
-	]);
+  let lights = new Float32Array([
+    -50.0,  10.0, -30.0,
+    0.0,   15.0, -30.0,
+    50.0,   20.0, -30.0
+  ]);
   
   function render(now) {
     requestId = undefined;
@@ -583,8 +600,8 @@ function main() {
     gl.uniform2f(resolutionLocation, gl.canvas.width, gl.canvas.height);
     gl.uniform2f(mouseLocation, mouseX, mouseY);
     gl.uniform1f(timeLocation, time);
-		gl.uniform4fv(worldLocation, scene);
-    gl.uniform3fv(worldLocation, lights);
+    gl.uniform4fv(worldLocation, scene);
+    gl.uniform3fv(lightsLocation, lights);
     
     gl.drawArrays(
         gl.TRIANGLES,
