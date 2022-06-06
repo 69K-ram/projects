@@ -16,8 +16,8 @@ canvas {
 class Camera {
    constructor() {
   	this.x = 0
-    	this.y = -10
-    	this.z = -1500
+    	this.y = 0
+    	this.z = -1000
   	this.angle = 0
   }
 }
@@ -26,7 +26,7 @@ class Dot {
    constructor() {
     	this.x = (Math.random() - 0.5) * width
    	//this.y = (Math.random() - 0.5) * height
-    	this.y = 0
+    	this.y = 10
     	this.z = Math.random() * width
     	this.radius = Math.random() * 20 + 30;
     	this.xProjected = 0 
@@ -36,7 +36,7 @@ class Dot {
     project() {
     	// The scaleProjected will store the scale of the element based on its distance from the 'camera'
     	this.scaleProjected = Math.max(PERSPECTIVE / (PERSPECTIVE + (this.z + cam.z)), 0)
-    	this.xProjected = ((this.x + cam.x)* this.scaleProjected) + PROJECTION_CENTRE_X
+    	this.xProjected = ((this.x + cam.x) * this.scaleProjected) + PROJECTION_CENTRE_X
     	this.yProjected = ((this.y + cam.y) * this.scaleProjected) + PROJECTION_CENTRE_Y
   	}
 
@@ -47,9 +47,8 @@ class Dot {
     	//ctx.globalAlpha = Math.abs(1 - (this.z - cam.z) / width);
     	// We draw a rectangle based on the projected coordinates and scale
       if (this.z > cam.z) {
-    		ctx.drawImage(treepng, this.xProjected - this.radius, this.yProjected - this.radius, this.radius * 2 * this.scaleProjected, this.radius * 2 * this.scaleProjected)
+    	ctx.drawImage(treepng, this.xProjected - (this.radius *2* this.scaleProjected), this.yProjected - (this.radius *2* this.scaleProjected), this.radius * 2 * this.scaleProjected * (treepng.width/treepng.width), this.radius * 2 * this.scaleProjected * (treepng.width/treepng.width))
       }
-      //ctx.fillRect(this.xProjected - this.radius, this.yProjected - this.radius, this.radius * 2 * this.scaleProjected, this.radius * 2 * this.scaleProjected)
     }
 }
 
@@ -93,9 +92,9 @@ function onResize() {
     canvas.height = displayHeight;
     width = canvas.width
     height = canvas.height
-		PERSPECTIVE = width * 0.8 // fov
-	  PROJECTION_CENTRE_X = width / 2
-		PROJECTION_CENTRE_Y = height / 2
+    	PERSPECTIVE = width * 0.8 // fov
+	PROJECTION_CENTRE_X = width / 2
+	PROJECTION_CENTRE_Y = height / 2
     
     render()
   }
