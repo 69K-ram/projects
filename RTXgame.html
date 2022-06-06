@@ -24,7 +24,7 @@ uniform vec4 iWorld[24];
 uniform vec3 iLights[3];
 
 uniform vec2 iResolution; // passed in from JavaScript, holds the resolution of the canvas it's displaying on
-uniform vec2 iMouse; // passed in from JavaScript, holds the mouse location (x,y)
+uniform vec2 iSong; 
 uniform float iTime; // passed in from JavaScript, records how many milliseconds the code has been running for
 
 // output for the fragment shader
@@ -243,7 +243,12 @@ vec3 skyColour (vec3 direction) { // calculates a colour from a blueish gradient
   //float t = 0.5 * (normalize(direction).y + 1.0);
   //return vec3( (1.0-t)*vec3(1,1,1) + t*vec3(0.5,0.7,1.0) );
   float t = normalize(direction).y;
-  return 0.3 * vec3( (1.0-t)*vec3(0.0,0.0,0.2) + t*vec3(0.3,0.0,0.2) );
+  //return 1.0 * vec3( (abs(sin(iTime/3.0) )-t)*vec3(0.2,0.0,1.0) + t*vec3(1.0,0.6,0.0) );
+  return vec3( 
+    sin(iTime/3.0) * t,
+    cos(iTime*2.0/3.0) * (1.0-t),
+    sin(iTime/3.0)
+    );
 }
 
 vec3 rayColour (Ray r, Sphere scene[WorldLength], float randomSeed) {
@@ -437,7 +442,7 @@ function main() {
 
   // look up uniform locations
   var resolutionLocation = gl.getUniformLocation(program, 'iResolution');
-  var mouseLocation = gl.getUniformLocation(program, 'iMouse');
+  var audioLocation = gl.getUniformLocation(program, 'iSong');
   var timeLocation = gl.getUniformLocation(program, 'iTime');
   var worldLocation = gl.getUniformLocation(program, 'iWorld');
   var lightsLocation = gl.getUniformLocation(program, 'iLights');
@@ -492,17 +497,21 @@ function main() {
   function obstaclesMove(fps) {
     sceneMove(0, 0, 10 / (fps / 6) );
     for (let i = 0; i < 17; i++) {
-      if (scene[i*4] < -20 || scene[i*4] > 20) { 
+      if (scene[i*4] < -30 || scene[i*4] > 30) { 
         scene[i*4] = scene[i*4] * -1; 
       }
       if (scene[i*4 + 2] > 8) { 
         scene[i*4 + 2] = Math.random() * -30 -50;
         scene[i*4 + 1] = Math.random() + 1;
-        scene[i*4] = Math.random() * 40 - 20;
+        scene[i*4] = Math.random() * 60 - 30;
       }
-      if ( scene[i*4 + 2] + 0.5 > -2.0 && scene[i*4 + 2] - 0.5 < 0.5) {
-        if (scene[i*4] + 0.5 > -1.5 && scene[i*4] - 0.5 < 1.5) {
-          alert("You just lost. You absolute fucking imbecile, you couldn't dodge some spheres. Your parents should have aborted you");
+      if ( scene[i*4 + 2] > -1.5 && scene[i*4 + 2] < -0.5) {
+        if (scene[i*4] > -1.2 && scene[i*4] < 1.2) {
+          audio.pause();
+          playingSong = false;
+          kaboom.play();
+          alert("You lose! Your flew for " + Math.round(time) + " seconds. Press OK to retry.");
+          timeStart = Date.now();
           scene = [...scenePreTransform];
           left = false;
           right = false;
@@ -530,14 +539,26 @@ function main() {
   let right = false;
   let steering = 0;
   let movedX = 0;
-
+  let timeStart = Date.now(); // ms since jan 1 1970
+  function getData() {
+    return fetch('starsOfTheNight.wav', { mode: 'no-cors'})
+    .then(function(response) {
+      return response.arrayBuffer();
+    });
+  }
   document.addEventListener("keydown", function (event) {
+    if (!playingSong) { 
+      audio.play(); playingSong = true;
+      let song = new Int16Array(getData());
+      console.log(song);
+    } // only play song after keypress
+
     if (event.defaultPrevented) {return;}
     var handled = false;
     if (event.key !== undefined) {
       handled = true;
-      if (event.key == 'w' || event.key == 'W') { } 
-      if (event.key == 's' || event.key == 'S') { }
+      if (event.key == 'ArrowLeft') { left = true; } 
+      if (event.key == 'ArrowRight') { right = true; }
       if (event.key == 'a' || event.key == 'A') { left = true; }
       if (event.key == 'd' || event.key == 'D') { right = true; }
     }
@@ -549,8 +570,8 @@ function main() {
     var handled = false;
     if (event.key !== undefined) {
       handled = true;
-      if (event.key == 'w' || event.key == 'W') { } 
-      if (event.key == 's' || event.key == 'S') { }
+      if (event.key == 'ArrowLeft') { left = false; } 
+      if (event.key == 'ArrowRight') { right = false; }
       if (event.key == 'a' || event.key == 'A') { left = false; }
       if (event.key == 'd' || event.key == 'D') { right = false; }
     }
@@ -586,7 +607,7 @@ function main() {
 
   let then = 0;
   let time = 0;
-  
+
   let scene = new Float32Array([
       5.0,  0.5, -50.0,  1.0,
        5.0,  0.5, -49.0,  0.0,
@@ -621,12 +642,23 @@ function main() {
     55.0,   20.0, -30.0
   ]);
   
+  //fetch('starsOfTheNight.wav', { mode: 'no-cors'});
+  // .then( )
+
+  var audio = new Audio();
+  audio.src = 'starsOfTheNight.mp3';
+  var kaboom = new Audio('kaboom.mp3');
+  var playingSong = false;
+
+  var rawAudioL = [];
+  var rawAudioR = [];
+
   function render(now) {
     requestId = undefined;
     now *= 0.001;  // convert to seconds
     const elapsedTime = Math.min(now - then, 0.1);
     tick(1/elapsedTime);
-    console.log(Math.round(1/elapsedTime));
+    //console.log(Math.round(1/elapsedTime));
     time += elapsedTime;
     then = now;
 
@@ -642,7 +674,7 @@ function main() {
     gl.bindVertexArray(vao);
 
     gl.uniform2f(resolutionLocation, gl.canvas.width, gl.canvas.height);
-    gl.uniform2f(mouseLocation, 0, 0);
+    gl.uniform2f(audioLocation, rawAudioL[time*44100], rawAudioR[time*44100]);
     gl.uniform1f(timeLocation, time);
     gl.uniform4fv(worldLocation, scene);
     gl.uniform3fv(lightsLocation, lights);
@@ -654,10 +686,12 @@ function main() {
     );
     requestFrame();
   }
+
   requestFrame();
   requestAnimationFrame(cancelFrame);
 }
-
+alert("Use A/D or Left and Right Arrow keys to move. Avoid the balls for as long as you can. Press OK to start.");
 main();
+
 
 </script>
