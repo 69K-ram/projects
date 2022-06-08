@@ -18,7 +18,7 @@ class Camera {
    constructor() {
       this.x = 0
       this.y = 0
-      this.z = -1500
+      this.z = 0
       this.angle = 0
   }
 }
@@ -33,16 +33,26 @@ class Dot {
       this.yProjected = 0
       this.scaleProjected = 0
     }
-    rotate() {
-      this.transformedX = (this.x * Math.cos(cam.angle*DEGTORAD)) - (this.z * Math.sin(cam.angle*DEGTORAD))
-      this.transformedZ = (this.z * Math.sin(cam.angle*DEGTORAD)) + (this.z * Math.cos(cam.angle*DEGTORAD)) 
+    transform() {
+      let theta = cam.angle*DEGTORAD
+      let s = Math.sin(theta)
+      let c = Math.cos(theta)
+
+      this.transformedX = this.x-cam.x // subtract rotation point (camera)
+      this.transformedZ = this.z-cam.z
+
+      this.tempX = this.transformedX*c - this.transformedZ*s // rotate
+      this.tempZ = this.transformedX*s + this.transformedZ*c
+
+      this.transformedX = this.tempX + cam.x // add back the rotation point (camera)
+      this.transformedZ = this.tempZ + cam.z
     }
     project() {
       // The scaleProjected will store the scale of the element based on its distance from the 'camera'
-      this.rotate()
+      this.transform()
       this.scaleProjected = Math.max(PERSPECTIVE / (PERSPECTIVE + (this.transformedZ + cam.z)), 0)
-      this.xProjected = ((this.transformedX + cam.x) * this.scaleProjected) + PROJECTION_CENTRE_X
-      this.yProjected = ((this.y + cam.y) * this.scaleProjected) + PROJECTION_CENTRE_Y
+      this.xProjected = ((this.transformedX - cam.x) * this.scaleProjected) + PROJECTION_CENTRE_X
+      this.yProjected = ((this.y - cam.y) * this.scaleProjected) + PROJECTION_CENTRE_Y
     }
     draw() {
       // We first calculate the projected values of our dot
@@ -117,14 +127,19 @@ function controls() {
 function moveCar() {
   if (car.throttle == 1 && car.brakes == 1) {
   } else if (car.throttle == 1) {
-    cam.z --
+    let theta = cam.angle*DEGTORAD
+    cam.z -= Math.cos(theta)
+    cam.x += Math.sin(theta) 
+    console.log(cam.x, cam.z, cam.angle)
   } else if (car.brakes == 1) { 
-    cam.z ++
+      let theta = cam.angle*DEGTORAD
+      cam.z += Math.cos(theta)
+      cam.x -= Math.sin(theta) 
   }
   if (car.steering == -1) {
-    cam.angle -= 0.1
+    cam.angle -= 0.5
   } else if (car.steering == 1) {
-    cam.angle += 0.1
+    cam.angle += 0.5
   }
 }
 
@@ -185,7 +200,7 @@ let height = canvas.clientHeight
 const ctx = canvas.getContext('2d')
 
 let treepng = new Image()
-//treepng.src = "https://pics.clipartpng.com/Green_Realistic_Tree_PNG_Clip_Art-1097.png"
+//treepng.src = "https://pics.clipartpng.com/Realistic_Green_Tree_PNG_Clip_Art-1102.png"
 treepng.src = "tree.png"
 let PERSPECTIVE = width * 0.8 // fov
 let PROJECTION_CENTRE_X = width / 2
