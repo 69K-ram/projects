@@ -1,5 +1,4 @@
 // a modified version of https://forum.arduino.cc/index.php?topic=359928.0 to run on (at least it works on mine) SPFD5408 lcd screens. nobody intentionally buys them, but mine was claimed to be an ili9431.
-// btw jason kenny sucks dong, don't vote for him
 
 #include <SPFD5408_Adafruit_GFX.h>    // Core graphics library
 #include <SPFD5408_Adafruit_TFTLCD.h> // Hardware-specific library
